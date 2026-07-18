@@ -1,0 +1,8 @@
+[package]
+name = "itu1371"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+deku = "0.20.3"
+chrono = "0.4.45"
