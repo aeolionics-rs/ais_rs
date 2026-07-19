@@ -70,20 +70,20 @@ pub enum Message {
 
 #[derive(DekuRead, DekuWrite)]
 pub struct ShipPositionReport {
-    repeat: RepeatCount,
-    source: MMSI,
-    status: NavigationalStatus,
-    rate_of_turn: RateOfTurn,
-    speed_over_ground: SpeedOverGround,
-    position: StationPosition,
-    course_over_ground: CourseOverGround,
-    heading: Heading,
-    timestamp: Timestamp,
-    manoeuvre: SpecialManoeuvre,
+    pub repeat: RepeatCount,
+    pub source: MMSI,
+    pub status: NavigationalStatus,
+    pub rate_of_turn: RateOfTurn,
+    pub speed_over_ground: SpeedOverGround,
+    pub position: StationPosition,
+    pub course_over_ground: CourseOverGround,
+    pub heading: Heading,
+    pub timestamp: Timestamp,
+    pub manoeuvre: SpecialManoeuvre,
     #[deku(pad_bits_before = "2")]
-    transmit_power: TransmitPower,
-    raim: RaimFlag,
-    state: CommunicationState,
+    pub transmit_power: TransmitPower,
+    pub raim: RaimFlag,
+    pub state: CommunicationState,
 }
 
 #[derive(DekuRead, DekuWrite)]
