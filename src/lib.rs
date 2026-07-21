@@ -497,21 +497,17 @@ mod test {
     #[test]
     fn type1() {
         let msg = Message::ScheduledPositionReport(ShipPositionReport {
-            repeat: RepeatCount(0),
-            source: MMSI(0),
-            status: NavigationalStatus::UnderWay,
-            rate_of_turn: RateOfTurn(0),
-            speed_over_ground: SpeedOverGround(0b11_1111_1111),
-            position: StationPosition{
-                accuracy: PositionAccuracy::Low,
-                longitude: 0,
-                latitude: 0,
-            },
-            course_over_ground: CourseOverGround(0),
-            heading: Heading(0),
+            repeat: RepeatCount::default(),
+            source: MMSI::new(0).unwrap(),
+            status: NavigationalStatus::default(),
+            rate_of_turn: RateOfTurn::default(),
+            speed_over_ground: SpeedOverGround::default(),
+            position: StationPosition::default(),
+            course_over_ground: CourseOverGround::default(),
+            heading: Heading::default(),
             timestamp: Timestamp(0),
-            manoeuvre: SpecialManoeuvre::NotAvailable,
-            transmit_power: TransmitPower::High,
+            manoeuvre: SpecialManoeuvre::default(),
+            transmit_power: TransmitPower::default(),
             raim: RaimFlag::NotInUse,
             state: CommunicationState {
                 sync: 0b11,
@@ -519,21 +515,13 @@ mod test {
                 sub_message: 0x3fff,
             },
         });
-        let result = msg.to_bytes().unwrap();
-        assert_eq!(result.len(), 168 / 8);
-        println!("{:02X?}", result);
+        let result = msg.to_bits().unwrap();
+        assert_eq!(result.len(), 168);
+        println!("{:b}", result);
     }
 
     #[test]
     fn geographic_notice() {
-        let msg = Message::BinaryBroadcastMessage(BroadcastApplicationMessage {
-            repeat_count: RepeatCount(0),
-            source: MMSI(999999999),
-            message: ApplicationMessage::Unknown((DAC(1), Function(41)), vec![0x11, 0x22, 0x33, 0x44])
-        });
-        let result = msg.to_bytes().unwrap();
-        println!("{:02X?}", result);
-
         let asm = GeographicNotice {
             version: Version(0),
             linkage: Linkage(0),
@@ -544,12 +532,13 @@ mod test {
             subareas: vec![SubArea::AssociatedText(Text::from_str("DEADBEEF").unwrap())],
         };
         let msg = Message::BinaryBroadcastMessage(BroadcastApplicationMessage {
-            repeat_count: RepeatCount(0),
-            source: MMSI(999999999),
+            repeat_count: RepeatCount::Original,
+            source: MMSI::new(999999999).unwrap(),
             message: ApplicationMessage::GeographicNotice_EU(asm)
         });
-        let result = msg.to_bytes().unwrap();
-        println!("{}: {:02X?}", result.len(), result);
+        let result = msg.to_bits().unwrap();
+        assert_eq!(result.len(), 216);
+        println!("{:b}", result);
 
 
     }

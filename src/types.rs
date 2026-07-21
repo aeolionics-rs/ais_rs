@@ -1,8 +1,47 @@
 use crate::six_bit_ascii::SixBitText;
 use chrono::{DateTime, Datelike, Timelike, Utc};
-use deku::{deku_derive, DekuRead, DekuWrite};
+use deku::{DekuRead, DekuWrite, deku_derive};
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
 
+/// Used by a repeater to indicate how many times a message has been repeated.
 #[repr(u8)]
+#[deku_derive(DekuRead, DekuWrite)]
+#[deku(id_type = "u8", bits = "2")]
+pub enum RepeatCount {
+    /// Original message (default).
+    Original = 0,
+    // First retransmission.
+    Once = 1,
+    /// Second retransmission.
+    Twice = 2,
+    /// Do not repeat any more.
+    DoNotRepeat = 3,
+}
+impl Default for RepeatCount {
+    fn default() -> Self {
+        Self::Original
+    }
+}
+
+/// Maritime Mobile Service Identity.
+#[deku_derive(DekuRead, DekuWrite)]
+pub struct MMSI(#[deku(bits = "30", endian = "big")] u32);
+impl MMSI {
+    /// Create a new MMS identifier.
+    ///
+    /// Returns `OutOfRange` if the value is not a valid MMSI.
+    pub fn new(mmsi: u32) -> Result<Self, OutOfRange> {
+        match mmsi {
+            ..=999_999_999 => Ok(MMSI(mmsi)),
+            _ => Err(OutOfRange),
+        }
+    }
+}
+
+/// Version of the AIS standard [ITU R.REC-M1371](https://www.itu.int/rec/R-REC-M.1371).
+#[repr(u8)]
+#[non_exhaustive]
 #[derive(DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum AisVersion {
@@ -14,7 +53,7 @@ pub enum AisVersion {
 
 #[derive(DekuRead, DekuWrite)]
 #[deku(endian = "big")]
-pub struct Manufacturer{
+pub struct Manufacturer {
     #[deku(bits = 18)]
     id: u32,
     #[deku(bits = 4)]
@@ -22,13 +61,6 @@ pub struct Manufacturer{
     #[deku(bits = 20)]
     serial: u32,
 }
-
-#[deku_derive(DekuRead, DekuWrite)]
-pub struct RepeatCount(#[deku(bits = "2")] pub u8);
-
-#[deku_derive(DekuRead, DekuWrite)]
-#[deku(endian = "big")]
-pub struct MMSI(#[deku(bits = "30")] pub u32);
 
 #[deku_derive(DekuRead, DekuWrite)]
 #[deku(endian = "big")]
@@ -202,34 +234,45 @@ pub enum ShipType {
     Unknown(u8),
 }
 
+/// Ship's navigational status.
 #[repr(u8)]
 #[derive(DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "4")]
 pub enum NavigationalStatus {
+    /// Vessel is under way under power.
     UnderWay = 0,
+    /// Vessel is at anchor.
     AtAnchor = 1,
+    /// Vessel is not under command.
     NotUnderCommand = 2,
+    /// Vessel is restricted in her ability to manoeuvre.
     RestrictedManoeuvrability = 3,
+    /// Vessel is constrained by her draught.
     ConstrainedByDraught = 4,
+    /// Vessel is moored.
     Moored = 5,
+    /// Vessel is aground.
     Aground = 6,
+    /// Vessel engaged in fishing.
     Fishing = 7,
+    /// Vessel under way under sailing only.
     Sailing = 8,
     Reserved9 = 9,
     Reserved10 = 10,
+    /// Power-driven vessel towing astern.
     TowingAstern = 11,
+    /// Power drive vessel pushing ahead or towing alongside.
     Pushing = 12,
     Reserved13 = 13,
+    /// Active AIS-SART, MOB-AIS or EPIRB-AIS
     ActiveSART = 14,
+    /// Undefined (default), or SART under test.
     Undefined = 15,
 }
-
-#[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
-#[deku(id_type = "u8", bits = "1")]
-pub enum RaimFlag {
-    NotInUse = 0,
-    InUse = 1,
+impl Default for NavigationalStatus {
+    fn default() -> Self {
+        NavigationalStatus::Undefined
+    }
 }
 
 #[repr(u8)]
@@ -399,29 +442,75 @@ pub struct QuietTime(#[deku(bits = 4)] pub u32);
 pub struct Timestamp(#[deku(bits = 6)] pub u8);
 
 pub type Name = SixBitText<120>;
-pub type CallSign = SixBitText<7>;
 
+pub type CallSign = SixBitText<7>;
 #[derive(DekuRead, DekuWrite)]
 pub struct RateOfTurn(#[deku(bits = 8)] pub i8);
+
+impl Default for RateOfTurn {
+    fn default() -> Self {
+        Self(-128)
+    }
+}
 
 #[derive(DekuRead, DekuWrite)]
 pub struct SpeedOverGround(#[deku(bits = 10, endian = "big")] pub u16);
 
+impl Default for SpeedOverGround {
+    fn default() -> Self {
+        SpeedOverGround(1023)
+    }
+}
+
 #[derive(DekuRead, DekuWrite)]
 pub struct CourseOverGround(#[deku(bits = 12, endian = "big")] pub u16);
+
+impl Default for CourseOverGround {
+    fn default() -> Self {
+        CourseOverGround(3600)
+    }
+}
 
 #[derive(DekuRead, DekuWrite)]
 pub struct Heading(#[deku(bits = 9, endian = "big")] pub u16);
 
+impl Default for Heading {
+    fn default() -> Self {
+        Self(511)
+    }
+}
+
 #[derive(DekuRead, DekuWrite)]
 pub struct Altitude(#[deku(bits = 12, endian = "big")] pub u16);
 
+/// Receiver autonomous integrity monitoring (RAIM) indicator.
+///
+/// See M-1371 Table 48.
+#[repr(u8)]
+#[derive(DekuRead, DekuWrite)]
+#[deku(id_type = "u8", bits = "1")]
+pub enum RaimFlag {
+    /// RAIM is not in use.
+    NotInUse = 0,
+    /// RAIM is in use.
+    InUse = 1,
+}
+
+/// Position accuracy based on M-1371 Table 48.
 #[repr(u8)]
 #[derive(DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum PositionAccuracy {
+    /// Accuracy > 10m (default)
     Low = 0,
+    /// Accuracy < 10m
     High = 1,
+}
+
+impl Default for PositionAccuracy {
+    fn default() -> Self {
+        PositionAccuracy::Low
+    }
 }
 
 #[derive(DekuRead, DekuWrite)]
@@ -431,6 +520,15 @@ pub struct StationPosition {
     pub longitude: i32,
     #[deku(bits = 27, endian = "big")]
     pub latitude: i32,
+}
+impl Default for StationPosition {
+    fn default() -> Self {
+        Self {
+            accuracy: PositionAccuracy::default(),
+            longitude: 0x6791AC0,
+            latitude: 0x3412140,
+        }
+    }
 }
 
 #[derive(DekuRead, DekuWrite)]
@@ -448,22 +546,42 @@ pub struct GnssArea {
     lower_left: GnssPosition,
 }
 
+/// Indicates if the vessel is performing a special manoeuvre.
 #[repr(u8)]
 #[derive(DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum SpecialManoeuvre {
+    /// Information is not available (default).
     NotAvailable = 0,
+    /// Vessel is not engaged in a special manoeuvre.
     NotEngaged = 1,
+    /// Vessel is engaged in a special manoeuvre (e.g. a passing arrangement)
     Engaged = 2,
+    /// Reserved for regional use.
     Regional = 3,
 }
 
+impl Default for SpecialManoeuvre {
+    fn default() -> Self {
+        SpecialManoeuvre::NotAvailable
+    }
+}
+
+/// Transmitter output power.
 #[repr(u8)]
 #[derive(DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum TransmitPower {
+    /// Transmitting in high power mode (default).
     High = 0,
+    /// Transmitting in low power mode.
     Low = 1,
+}
+
+impl Default for TransmitPower {
+    fn default() -> Self {
+        TransmitPower::High
+    }
 }
 
 #[derive(DekuRead, DekuWrite)]
@@ -476,7 +594,7 @@ pub enum VdesCapability {
     AisOnly = 0,
     Vdes = 1,
     VdesTerrestrial = 2,
-    VdesSatellite = 3
+    VdesSatellite = 3,
 }
 
 #[repr(u8)]
@@ -508,7 +626,7 @@ pub enum StationSelection {
     #[deku(id = "10")]
     AllInCoverageArea,
     #[deku(id_pat = "_")]
-    Other(u8)
+    Other(u8),
 }
 
 #[repr(u8)]
@@ -550,5 +668,16 @@ pub enum ReportingInterval {
     #[deku(id = "11")]
     TwoSeconds,
     #[deku(id_pat = "_")]
-    Other(u8)
+    Other(u8),
 }
+
+#[derive(Debug)]
+pub struct OutOfRange;
+
+impl Display for OutOfRange {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("out of range")
+    }
+}
+
+impl Error for OutOfRange {}
