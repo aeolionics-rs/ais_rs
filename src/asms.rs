@@ -1,7 +1,11 @@
-pub mod area_notice;
+mod geographic_notice;
+mod area_notice;
+mod area_notice_v2;
 
-use crate::asms::area_notice::GeographicNotice;
+use area_notice::AreaNotice;
+use area_notice_v2::AreaNoticeV2;
 use deku::{DekuRead, DekuWrite};
+use geographic_notice::GeographicNotice;
 
 #[derive(PartialOrd, PartialEq, DekuRead, DekuWrite, Debug)]
 pub struct DAC(#[deku(bits = 10, endian = "big")] pub u16);
@@ -18,11 +22,25 @@ pub struct Linkage(#[deku(bits = 10, endian = "big")] pub u16);
 #[allow(non_camel_case_types)]
 #[derive(DekuRead, DekuWrite)]
 #[deku(id_type = "(DAC, Function)")]
-pub enum ApplicationMessage {
+pub enum AddressedApplicationMessage {
+    #[deku(id = "(DAC(1), Function(23))")]
+    AreaNotice(AreaNotice),
     #[deku(id = "(DAC(200), Function(42))")]
-    GeographicNotice_EU(GeographicNotice),
+    GeographicNotice(GeographicNotice),
+    #[deku(id_pat = "_")]
+    Unknown((DAC, Function), #[deku(read_all)] Vec<u8>),
+}
+
+#[allow(non_camel_case_types)]
+#[derive(DekuRead, DekuWrite)]
+#[deku(id_type = "(DAC, Function)")]
+pub enum BroadcastApplicationMessage {
+    #[deku(id = "(DAC(1), Function(22))")]
+    AreaNotice(AreaNotice),
+    #[deku(id = "(DAC(366), Function(22))")]
+    AreaNoticeV2(AreaNoticeV2),
     #[deku(id = "(DAC(367), Function(22))")]
-    GeographicNotice_USCG(GeographicNotice),
+    GeographicNotice(GeographicNotice),
     #[deku(id_pat = "_")]
     Unknown((DAC, Function), #[deku(read_all)] Vec<u8>),
 }
