@@ -11,11 +11,11 @@ pub use types::*;
 #[deku(id_type = "u8", bits = "6")]
 pub enum Message {
     #[deku(id = 1)]
-    ScheduledPositionReport(ShipPositionReport),
+    ScheduledPositionReport(PositionReport),
     #[deku(id = 2)]
-    AssignedPositionReport(ShipPositionReport),
+    AssignedPositionReport(PositionReport),
     #[deku(id = 3)]
-    SpecialPositionReport(ShipPositionReport),
+    SpecialPositionReport(PositionReport),
     #[deku(id = 4)]
     BaseStationReport(BaseStationReport),
     #[deku(id = 5)]
@@ -43,7 +43,7 @@ pub enum Message {
     #[deku(id = 16)]
     AssignmentModeCommand(AssignedModeCommand),
     #[deku(id = 17)]
-    DgnssBroadcastMessage(GnssBroadcast),
+    GnssBroadcastMessage(GnssBroadcast),
     #[deku(id = 18)]
     StandardClassBReport(StandardClassBReport),
     #[deku(id = 19)]
@@ -69,7 +69,7 @@ pub enum Message {
 }
 
 #[derive(DekuRead, DekuWrite)]
-pub struct ShipPositionReport {
+pub struct PositionReport {
     pub repeat: RepeatCount,
     pub source: MMSI,
     pub status: NavigationalStatus,
@@ -496,7 +496,7 @@ mod test {
 
     #[test]
     fn type1() {
-        let msg = Message::ScheduledPositionReport(ShipPositionReport {
+        let msg = Message::ScheduledPositionReport(PositionReport {
             repeat: RepeatCount::default(),
             source: MMSI::new(0).unwrap(),
             status: NavigationalStatus::default(),
