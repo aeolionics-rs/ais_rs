@@ -164,10 +164,10 @@ pub struct Acknowledgement {
 
 #[derive(DekuRead, DekuWrite)]
 pub struct BroadcastApplicationMessage {
-    repeat_count: RepeatCount,
+    pub repeat_count: RepeatCount,
     #[deku(pad_bits_after = "2")]
-    source: MMSI,
-    message: asms::BroadcastApplicationMessage,
+    pub source: MMSI,
+    pub message: asms::BroadcastApplicationMessage,
 }
 
 #[derive(DekuRead, DekuWrite)]

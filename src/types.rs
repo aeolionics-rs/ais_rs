@@ -433,7 +433,7 @@ impl Default for UtcDateTime {
 }
 
 #[derive(DekuRead, DekuWrite)]
-pub struct Minutes(#[deku(bits = 18)] pub u32);
+pub struct Minutes(#[deku(bits = 18, endian="big" )] pub u32);
 
 #[derive(DekuRead, DekuWrite)]
 pub struct QuietTime(#[deku(bits = 4)] pub u32);

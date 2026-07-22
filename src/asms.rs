@@ -1,5 +1,5 @@
 mod geographic_notice;
-mod area_notice;
+pub mod area_notice;
 mod area_notice_v2;
 
 use area_notice::AreaNotice;
