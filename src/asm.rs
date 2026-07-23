@@ -1,3 +1,8 @@
+//  SPDX-FileCopyrightText: 2026-2026. Aeolionics, LLC
+//
+//  SPDX-License-Identifier: Apache-2.0
+
+//! Application-specific messages.
 mod geographic_notice;
 pub mod area_notice;
 mod area_notice_v2;

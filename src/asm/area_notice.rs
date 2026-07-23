@@ -1,5 +1,9 @@
+//  SPDX-FileCopyrightText: 2026-2026. Aeolionics, LLC
+//
+//  SPDX-License-Identifier: Apache-2.0
+
 use super::Linkage;
-use crate::six_bit_ascii::SixBitText;
+use crate::types::sixbit::SixBitText;
 use crate::types::{Minutes, MonthDayHourMinute};
 use deku::{DekuRead, DekuWrite};
 

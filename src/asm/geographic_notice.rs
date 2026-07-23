@@ -1,6 +1,10 @@
+//  SPDX-FileCopyrightText: 2026-2026. Aeolionics, LLC
+//
+//  SPDX-License-Identifier: Apache-2.0
+
 use super::area_notice_v2::{Boundary, Description, Leg, Position, Radius, Scale, SectorBoundary};
 use super::{Linkage, Version};
-use crate::six_bit_ascii::SixBitText;
+use crate::types::sixbit::SixBitText;
 use crate::types::{Minutes, MonthDayHourMinute};
 use deku::{DekuRead, DekuWrite};
 

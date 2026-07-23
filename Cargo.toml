@@ -2,6 +2,12 @@
 name = "ais_rs"
 version = "0.1.0"
 edition = "2024"
+license = "Apache-2.0"
+description = "Library for working with ITU-R M.1371 AIS Messages"
+repository = "https://github.com/aeolionics-rs/ais_rs.git"
+readme = "README.md"
+keywords = ["ais", "m1371", "itu", "nmea"]
+categories = ["parser-implementations"]
 
 [dependencies]
 deku = "0.20.3"

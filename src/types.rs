@@ -1,8 +1,16 @@
-use crate::six_bit_ascii::SixBitText;
+//  SPDX-FileCopyrightText: 2026-2026. Aeolionics, LLC
+//
+//  SPDX-License-Identifier: Apache-2.0
+
+//! Common types.
+
 use chrono::{DateTime, Datelike, Timelike, Utc};
 use deku::{DekuRead, DekuWrite, deku_derive};
+use sixbit::SixBitText;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+
+pub mod sixbit;
 
 /// Used by a repeater to indicate how many times a message has been repeated.
 #[repr(u8)]
@@ -39,7 +47,7 @@ impl MMSI {
     }
 }
 
-/// Version of the AIS standard [ITU R.REC-M1371](https://www.itu.int/rec/R-REC-M.1371).
+/// Version of the AIS standard being used.
 #[repr(u8)]
 #[non_exhaustive]
 #[derive(DekuRead, DekuWrite)]
@@ -51,21 +59,27 @@ pub enum AisVersion {
     M1371_6 = 3,
 }
 
+/// Information about the equipment and its manufacturer.
 #[derive(DekuRead, DekuWrite)]
 #[deku(endian = "big")]
 pub struct Manufacturer {
+    /// Manufacturer code assigned by NMEA/SAE.
     #[deku(bits = 18)]
     id: u32,
+    /// Equipment model identifier.
     #[deku(bits = 4)]
     model: u32,
+    /// Equipment serial number.
     #[deku(bits = 20)]
     serial: u32,
 }
 
+/// A vessel's IMO number.
 #[deku_derive(DekuRead, DekuWrite)]
 #[deku(endian = "big")]
 pub struct ImoNumber(#[deku(bits = "30")] pub u32);
 
+/// The type of vessel.
 #[allow(non_camel_case_types)]
 #[derive(DekuRead, DekuWrite)]
 #[deku(id_type = "u8")]
@@ -433,7 +447,7 @@ impl Default for UtcDateTime {
 }
 
 #[derive(DekuRead, DekuWrite)]
-pub struct Minutes(#[deku(bits = 18, endian="big" )] pub u32);
+pub struct Minutes(#[deku(bits = 18, endian = "big")] pub u32);
 
 #[derive(DekuRead, DekuWrite)]
 pub struct QuietTime(#[deku(bits = 4)] pub u32);
