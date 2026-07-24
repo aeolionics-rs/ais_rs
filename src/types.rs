@@ -455,10 +455,30 @@ pub struct Minutes(#[deku(bits = 18, endian = "big")] pub u32);
 pub struct QuietTime(#[deku(bits = 4)] pub u32);
 
 #[derive(DekuRead, DekuWrite)]
-pub struct Timestamp(#[deku(bits = 6)] pub u8);
+#[deku(id_type = "u8", bits = "6")]
+pub enum Timestamp {
+    #[deku(id_pat = "0..60")]
+    Second(u8),
+    #[deku(id = "60")]
+    Unavailable,
+    #[deku(id = "61")]
+    Manual,
+    #[deku(id = "62")]
+    Estimated,
+    #[deku(id = "63")]
+    Inoperative,
+}
+
+impl Timestamp {
+    pub fn now() -> Self {
+        // SAFETY: second() returns number in range 0..59
+        Self::Second(Utc::now().second() as u8)
+    }
+}
+
 impl Default for Timestamp {
     fn default() -> Self {
-        Self(60)
+        Self::Unavailable
     }
 }
 

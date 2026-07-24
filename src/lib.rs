@@ -123,7 +123,7 @@ mod test {
             position: StationPosition::default(),
             course_over_ground: CourseOverGround::default(),
             heading: Heading::default(),
-            timestamp: Timestamp(0),
+            timestamp: Timestamp::Second(0),
             manoeuvre: SpecialManoeuvre::default(),
             transmit_power: TransmitPower::default(),
             raim: RaimFlag::NotInUse,
