@@ -458,7 +458,7 @@ pub struct QuietTime(#[deku(bits = 4)] pub u32);
 pub struct Timestamp(#[deku(bits = 6)] pub u8);
 impl Default for Timestamp {
     fn default() -> Self {
-        Self (60)
+        Self(60)
     }
 }
 
@@ -539,6 +539,7 @@ impl Default for PositionAccuracy {
     }
 }
 
+/// Station position, stored at a resolution of 1/10_000 minute.
 #[derive(DekuRead, DekuWrite)]
 pub struct StationPosition {
     pub accuracy: PositionAccuracy,
@@ -547,12 +548,45 @@ pub struct StationPosition {
     #[deku(bits = 27, endian = "big")]
     pub latitude: i32,
 }
+impl StationPosition {
+    /// Construct from raw components.
+    ///
+    /// Latitude and longitude are signed values with a resolution of 1/10_000 minute.
+    /// SAFETY: caller must ensure values are within range
+    pub unsafe fn new_raw(latitude: i32, longitude: i32, accuracy: PositionAccuracy) -> Self {
+        Self { latitude, longitude, accuracy }
+    }
+
+    /// Construct a position from latitude and longitude (degrees).
+    ///
+    /// Function asserts values are in range.
+    pub fn new(latitude: f64, longitude: f64, accuracy: PositionAccuracy) -> Self {
+        assert!(latitude >= -90.0 && latitude <= 90.0);
+        assert!(longitude >= -180.0 && longitude <= 180.0);
+        let latitude = (latitude * 60.0 * 10_000.0) as i32;
+        let longitude = (longitude * 60.0 * 10_000.0) as i32;
+        // SAFETY: Bounds have been checked.
+        unsafe { Self::new_raw(latitude, longitude, accuracy) }
+    }
+}
+
+impl TryFrom<(f64, f64)> for StationPosition {
+    type Error = OutOfRange;
+
+    fn try_from((latitude, longitude): (f64, f64)) -> Result<Self, Self::Error> {
+        if latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0 {
+            return Err(OutOfRange);
+        }
+        Ok(Self::new(latitude, longitude, Default::default()))
+    }
+}
+
 impl Default for StationPosition {
     fn default() -> Self {
         Self {
             accuracy: PositionAccuracy::default(),
-            longitude: 0x6791AC0,
-            latitude: 0x3412140,
+            longitude: 0x6791AC0, // Constant from spec = 181 * 60 * 10_000
+            latitude: 0x3412140,  // Constant from spec = 91 * 60 * 10_000
         }
     }
 }

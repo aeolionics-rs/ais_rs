@@ -2,10 +2,10 @@
 //
 //  SPDX-License-Identifier: Apache-2.0
 
-use super::area_notice_v2::{Boundary, Description, Leg, Position, Radius, Scale, SectorBoundary};
+use super::area_notice_v2::{Boundary, Description, Leg, Radius, Scale, SectorBoundary};
 use super::{Linkage, Version};
 use crate::types::sixbit::SixBitText;
-use crate::types::{Minutes, MonthDayHourMinute};
+use crate::types::{Minutes, MonthDayHourMinute, OutOfRange};
 use deku::{DekuRead, DekuWrite};
 
 /// Structure of a Geographic Notice message.
@@ -68,6 +68,59 @@ pub enum SubArea {
     Polygon(#[deku(pad_bits_after = "5")] Shape),
     #[deku(id = 5)]
     AssociatedText(#[deku(pad_bits_after = "3")] SixBitText<15>),
+}
+
+#[derive(DekuRead, DekuWrite)]
+pub struct Position {
+    #[deku(bits = "28", endian = "big")]
+    longitude: i32,
+    #[deku(bits = "27", endian = "big")]
+    latitude: i32,
+    #[deku(bits = "3")]
+    precision: u8,
+}
+
+impl Position {
+    /// Construct from raw components.
+    ///
+    /// Latitude and longitude are signed values with a resolution of 1/1_000 minute.
+    /// SAFETY: caller must ensure values are within range
+    pub unsafe fn new_raw(latitude: i32, longitude: i32, precision: u8) -> Self {
+        Self { latitude, longitude, precision }
+    }
+
+    /// Construct a position from latitude and longitude (degrees).
+    ///
+    /// Function asserts values are in range.
+    pub fn new(latitude: f64, longitude: f64, precision: u8) -> Self {
+        assert!(latitude >= -90.0 && latitude <= 90.0);
+        assert!(longitude >= -180.0 && longitude <= 180.0);
+        let latitude = (latitude * 60.0 * 10_000.0) as i32;
+        let longitude = (longitude * 60.0 * 10_000.0) as i32;
+        // SAFETY: Bounds have been checked.
+        unsafe { Self::new_raw(latitude, longitude, precision) }
+    }
+}
+
+impl TryFrom<(f64, f64)> for Position {
+    type Error = OutOfRange;
+
+    fn try_from((latitude, longitude): (f64, f64)) -> Result<Self, Self::Error> {
+        if latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0 {
+            return Err(OutOfRange);
+        }
+        Ok(Self::new(latitude, longitude, 4))
+    }
+}
+
+impl Default for Position {
+    fn default() -> Self {
+        Self {
+            latitude: 181 * 60 * 1_000,
+            longitude: 91 * 60 * 1_000,
+            precision: 4,
+        }
+    }
 }
 
 #[derive(DekuRead, DekuWrite)]
