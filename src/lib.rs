@@ -4,7 +4,8 @@
 
 //! A crate for working with AIS messages as defined by
 //! [ITU-R M.1371-6 (02/2026)](https://www.itu.int/rec/recommendation.asp?lang=en&parent=R-REC-M.1371-6-202602-I).
-
+//!
+//! [Deku](https://crates.io/crates/deku) is used for (de-)serialization.
 pub mod asm;
 pub mod message;
 pub mod types;

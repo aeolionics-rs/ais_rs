@@ -12,19 +12,19 @@ use std::fmt::{Debug, Display, Formatter};
 
 pub mod sixbit;
 
-/// Used by a repeater to indicate how many times a message has been repeated.
+/// Indicates how many times a message has been repeated.
 #[repr(u8)]
 #[deku_derive(DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum RepeatCount {
     /// Original message (default).
     Original = 0,
-    // First retransmission.
+    /// First retransmission.
     Once = 1,
     /// Second retransmission.
     Twice = 2,
-    /// Do not repeat any more.
-    DoNotRepeat = 3,
+    /// Third and final repeat; do not repeat any more.
+    Final = 3,
 }
 impl Default for RepeatCount {
     fn default() -> Self {
@@ -79,11 +79,13 @@ pub struct Manufacturer {
 #[deku(endian = "big")]
 pub struct ImoNumber(#[deku(bits = "30")] pub u32);
 
-/// The type of vessel.
+/// The type of ship.
 #[allow(non_camel_case_types)]
 #[derive(DekuRead, DekuWrite)]
 #[deku(id_type = "u8")]
 pub enum ShipType {
+    #[deku(id = "0")]
+    NotAvailable,
     #[deku(id = "1")]
     Research,
     #[deku(id = "2")]
@@ -454,6 +456,11 @@ pub struct QuietTime(#[deku(bits = 4)] pub u32);
 
 #[derive(DekuRead, DekuWrite)]
 pub struct Timestamp(#[deku(bits = 6)] pub u8);
+impl Default for Timestamp {
+    fn default() -> Self {
+        Self (60)
+    }
+}
 
 pub type Name = SixBitText<120>;
 
@@ -508,6 +515,11 @@ pub enum RaimFlag {
     NotInUse = 0,
     /// RAIM is in use.
     InUse = 1,
+}
+impl Default for RaimFlag {
+    fn default() -> Self {
+        RaimFlag::NotInUse
+    }
 }
 
 /// Position accuracy based on M-1371 Table 48.
