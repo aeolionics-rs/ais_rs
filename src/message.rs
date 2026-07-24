@@ -112,7 +112,7 @@ pub struct ShipStaticData {
 
 #[derive(DekuRead, DekuWrite)]
 pub struct AddressedApplicationMessage {
-    pub repeat_count: RepeatCount,
+    pub repeat: RepeatCount,
     pub source: MMSI,
     #[deku(bits = 2)]
     pub sequence: u8,
@@ -141,7 +141,7 @@ pub struct Acknowledgement {
 /// Message 8: An application-specific message broadcast to all stations.
 #[derive(DekuRead, DekuWrite)]
 pub struct BroadcastApplicationMessage {
-    pub repeat_count: RepeatCount,
+    pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
     pub source: MMSI,
     pub message: asm::BroadcastApplicationMessage,
@@ -149,6 +149,7 @@ pub struct BroadcastApplicationMessage {
 
 /// Message 10: Request UTC and date.
 #[derive(DekuRead, DekuWrite)]
+
 pub struct UtcInquiry {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
@@ -312,7 +313,6 @@ pub struct DataLinkManagement {
 #[derive(DekuRead, DekuWrite)]
 pub struct AtonReport {
     pub repeat: RepeatCount,
-    #[deku(pad_bits_after = "2")]
     pub source: MMSI,
     #[deku(bits = 5)]
     pub aton_type: u8,
@@ -324,7 +324,7 @@ pub struct AtonReport {
     #[deku(bits = 1)]
     pub off_position: bool,
     pub status: u8,
-    raim: RaimFlag,
+    pub raim: RaimFlag,
     #[deku(bits = 1)]
     pub virtual_aton: bool,
     #[deku(pad_bits_after = "1")]

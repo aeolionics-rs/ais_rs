@@ -346,13 +346,13 @@ pub enum DteReady {
 #[derive(DekuRead, DekuWrite)]
 pub struct OverallDimension {
     #[deku(bits = "9", endian = "big")]
-    a: u16,
+    pub a: u16,
     #[deku(bits = "9", endian = "big")]
-    b: u16,
+    pub b: u16,
     #[deku(bits = "6")]
-    c: u8,
+    pub c: u8,
     #[deku(bits = "6")]
-    d: u8,
+    pub d: u8,
 }
 
 #[repr(u8)]
@@ -462,7 +462,7 @@ impl Default for Timestamp {
     }
 }
 
-pub type Name = SixBitText<120>;
+pub type Name = SixBitText<20>;
 
 pub type CallSign = SixBitText<7>;
 #[derive(DekuRead, DekuWrite)]
