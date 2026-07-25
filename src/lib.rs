@@ -114,25 +114,14 @@ mod test {
 
     #[test]
     fn type1() {
-        let msg = Message::ScheduledPositionReport(PositionReport {
-            repeat: RepeatCount::default(),
-            source: MMSI::new(0).unwrap(),
-            status: NavigationalStatus::default(),
-            rate_of_turn: RateOfTurn::default(),
-            speed_over_ground: SpeedOverGround::default(),
-            position: StationPosition::default(),
-            course_over_ground: CourseOverGround::default(),
-            heading: Heading::default(),
-            timestamp: Timestamp::Second(0),
-            manoeuvre: SpecialManoeuvre::default(),
-            transmit_power: TransmitPower::default(),
-            raim: RaimFlag::NotInUse,
-            state: CommunicationState {
+        let msg = Message::ScheduledPositionReport(PositionReport::new(
+            MMSI::new(0).unwrap(),
+            CommunicationState {
                 sync: 0b11,
                 slot_time_out: 0b111,
                 sub_message: 0x3fff,
             },
-        });
+        ));
         let result = msg.to_bits().unwrap();
         assert_eq!(result.len(), 168);
     }
