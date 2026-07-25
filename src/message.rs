@@ -119,7 +119,7 @@ pub struct AddressedApplicationMessage {
     pub destination: MMSI,
     #[deku(bits = 1, pad_bits_after = "1")]
     pub retransmitted: bool,
-    pub message: asm::AddressedApplicationMessage,
+    pub message: asm::Addressed,
 }
 
 #[derive(DekuRead, DekuWrite)]
@@ -144,7 +144,7 @@ pub struct BroadcastApplicationMessage {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
     pub source: MMSI,
-    pub message: asm::BroadcastApplicationMessage,
+    pub message: asm::Broadcast,
 }
 
 /// Message 10: Request UTC and date.
@@ -419,7 +419,7 @@ pub struct SingleSlotBinary {
     pub data: Vec<u8>,
 }
 
-/// Message 25: An application-specific message sent in multiple slots.
+/// Message 26: An application-specific message sent in multiple slots.
 #[derive(DekuRead, DekuWrite)]
 pub struct MultiSlotBinary {
     pub repeat: RepeatCount,
