@@ -47,6 +47,13 @@ impl From<SixBitAscii> for u8 {
     }
 }
 
+impl From<SixBitAscii> for char {
+    /// Conversion to a standard ASCII character.
+    fn from(value: SixBitAscii) -> Self {
+        SixBitAscii::ALPHABET[value.0 as usize] as char
+    }
+}
+
 /// A sequence of 6-bit ASCII characters with a fixed length.
 ///
 /// The text will be padded with value zero (ASCII '@').
@@ -90,6 +97,32 @@ impl<const SIZE: usize> Display for SixBitText<SIZE> {
     }
 }
 
+#[derive(DekuRead, DekuWrite)]
+pub struct SixBitString {
+    #[deku(read_all)]
+    value: Vec<SixBitAscii>,
+}
+
+impl FromStr for SixBitString {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut result = Vec::with_capacity(s.len());
+        for ch in s.as_bytes() {
+            result.push(SixBitAscii::try_from(*ch)?);
+        }
+        Ok(SixBitString { value: result })
+    }
+}
+
+impl Display for SixBitString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for six_bit in &self.value {
+            f.write_char((*six_bit).into())?;
+        }
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 #[test]

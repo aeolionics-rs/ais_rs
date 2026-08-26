@@ -10,6 +10,7 @@ pub mod asm;
 pub mod message;
 pub mod types;
 
+use std::fmt::{Binary, Formatter, Write};
 use deku::prelude::*;
 use message::*;
 
@@ -105,6 +106,17 @@ pub enum Message {
     /// Message 28: Position and status report for aids-to-navigation sent in a single slot.
     #[deku(id = 28)]
     SingleSlotAtonReport(SingleSlotAtonReport),
+}
+
+impl Binary for Message {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Ok(bits) = self.to_bits() {
+            for bit in bits {
+                f.write_char(if bit { '1' } else { '0' })?;
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

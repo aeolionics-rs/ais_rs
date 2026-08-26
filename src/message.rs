@@ -6,7 +6,7 @@
 
 use deku::{DekuRead, DekuWrite};
 use crate::asm;
-use crate::types::sixbit::{SixBitAscii, SixBitText};
+use crate::types::sixbit::{SixBitAscii, SixBitString, SixBitText};
 use crate::types::{AisVersion, Altitude, AltitudeSensor, AssignedMode, CallSign, CommunicationState, CommunicationStateType, CourseOverGround, DteReady, GnssArea, GnssPosition, Heading, ImoNumber, Manufacturer, MonthDayHourMinute, Name, NavigationalStatus, OverallDimension, PositionAccuracy, PositionLatency, PositioningDevice, QuietTime, RaimFlag, RateOfTurn, RepeatCount, ReportingInterval, SatelliteTxControl, Sequence, ShipType, SpecialManoeuvre, SpeedOverGround, StationPosition, StationSelection, Timestamp, TransmitPower, TxRxMode, UtcDateTime, VdesCapability, MMSI};
 
 /// Message 1,2,3: a position report sent by a mobile, Class A station.
@@ -183,7 +183,7 @@ pub struct BroadcastSafetyMessage {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
     pub source: MMSI,
-    pub text: SixBitText<{ 968 / 6 }>,
+    pub text: SixBitString,
 }
 
 #[derive(DekuRead, DekuWrite)]
