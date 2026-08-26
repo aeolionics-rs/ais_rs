@@ -58,3 +58,4 @@ pub enum Broadcast {
     #[deku(id_pat = "_")]
     Unknown(ApplicationId, #[deku(read_all)] Vec<u8>),
 }
+

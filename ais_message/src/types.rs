@@ -4,13 +4,10 @@
 
 //! Common types.
 
+use ais_types::OutOfRange;
 use chrono::{DateTime, Datelike, Timelike, Utc};
 use deku::{DekuRead, DekuWrite, deku_derive};
-use sixbit::SixBitText;
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
-
-pub mod sixbit;
+use ais_sixbit::SixBitText;
 
 /// Indicates how many times a message has been repeated.
 #[repr(u8)]
@@ -378,35 +375,6 @@ pub enum PositioningDevice {
 }
 
 #[derive(DekuRead, DekuWrite)]
-pub struct MonthDayHourMinute {
-    #[deku(bits = 4)]
-    pub month: u8,
-    #[deku(bits = 5)]
-    pub day: u8,
-    #[deku(bits = 5)]
-    pub hour: u8,
-    #[deku(bits = 6)]
-    pub minute: u8,
-}
-
-impl From<DateTime<Utc>> for MonthDayHourMinute {
-    fn from(value: DateTime<Utc>) -> Self {
-        Self {
-            month: value.month() as u8,
-            day: value.day() as u8,
-            hour: value.hour() as u8,
-            minute: value.minute() as u8,
-        }
-    }
-}
-
-impl Default for MonthDayHourMinute {
-    fn default() -> Self {
-        Self { month: 0, day: 0, hour: 24, minute: 60 }
-    }
-}
-
-#[derive(DekuRead, DekuWrite)]
 pub struct UtcDateTime {
     #[deku(bits = 14)]
     pub year: u16,
@@ -447,9 +415,6 @@ impl Default for UtcDateTime {
         }
     }
 }
-
-#[derive(DekuRead, DekuWrite)]
-pub struct Minutes(#[deku(bits = 18, endian = "big")] pub u32);
 
 #[derive(DekuRead, DekuWrite)]
 pub struct QuietTime(#[deku(bits = 4)] pub u32);
@@ -751,13 +716,3 @@ pub enum ReportingInterval {
     Other(u8),
 }
 
-#[derive(Debug)]
-pub struct OutOfRange;
-
-impl Display for OutOfRange {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("out of range")
-    }
-}
-
-impl Error for OutOfRange {}

@@ -3,8 +3,8 @@
 //  SPDX-License-Identifier: Apache-2.0
 
 use super::Linkage;
-use crate::types::sixbit::SixBitText;
-use crate::types::{Minutes, MonthDayHourMinute, OutOfRange};
+use ais_sixbit::SixBitText;
+use ais_types::{Minutes, MonthDayHourMinute, OutOfRange};
 use deku::{DekuRead, DekuWrite};
 
 #[allow(non_camel_case_types)]

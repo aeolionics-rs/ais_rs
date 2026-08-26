@@ -5,9 +5,10 @@
 //! AIS message definitions.
 
 use deku::{DekuRead, DekuWrite};
-use crate::asm;
-use crate::types::sixbit::{SixBitAscii, SixBitString, SixBitText};
-use crate::types::{AisVersion, Altitude, AltitudeSensor, AssignedMode, CallSign, CommunicationState, CommunicationStateType, CourseOverGround, DteReady, GnssArea, GnssPosition, Heading, ImoNumber, Manufacturer, MonthDayHourMinute, Name, NavigationalStatus, OverallDimension, PositionAccuracy, PositionLatency, PositioningDevice, QuietTime, RaimFlag, RateOfTurn, RepeatCount, ReportingInterval, SatelliteTxControl, Sequence, ShipType, SpecialManoeuvre, SpeedOverGround, StationPosition, StationSelection, Timestamp, TransmitPower, TxRxMode, UtcDateTime, VdesCapability, MMSI};
+use ais_asm::{Addressed, Broadcast};
+use ais_sixbit::SixBitString;
+use ais_types::MonthDayHourMinute;
+use crate::types::{AisVersion, Altitude, AltitudeSensor, AssignedMode, CallSign, CommunicationState, CommunicationStateType, CourseOverGround, DteReady, GnssArea, GnssPosition, Heading, ImoNumber, Manufacturer, Name, NavigationalStatus, OverallDimension, PositionAccuracy, PositionLatency, PositioningDevice, QuietTime, RaimFlag, RateOfTurn, RepeatCount, ReportingInterval, SatelliteTxControl, Sequence, ShipType, SpecialManoeuvre, SpeedOverGround, StationPosition, StationSelection, Timestamp, TransmitPower, TxRxMode, UtcDateTime, VdesCapability, MMSI};
 
 /// Message 1,2,3: a position report sent by a mobile, Class A station.
 ///
@@ -119,7 +120,7 @@ pub struct AddressedApplicationMessage {
     pub destination: MMSI,
     #[deku(bits = 1, pad_bits_after = "1")]
     pub retransmitted: bool,
-    pub message: asm::Addressed,
+    pub message: Addressed,
 }
 
 #[derive(DekuRead, DekuWrite)]
@@ -144,7 +145,7 @@ pub struct BroadcastApplicationMessage {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
     pub source: MMSI,
-    pub message: asm::Broadcast,
+    pub message: Broadcast,
 }
 
 /// Message 10: Request UTC and date.
@@ -174,7 +175,7 @@ pub struct AddressedSafetyMessage {
     pub destination: MMSI,
     #[deku(bits = 1, pad_bits_after = "1")]
     pub retransmit: bool,
-    pub text: SixBitText<{ 936 / 6 }>,
+    pub text: SixBitString,
 }
 
 #[derive(DekuRead, DekuWrite)]
@@ -329,8 +330,7 @@ pub struct AtonReport {
     pub virtual_aton: bool,
     #[deku(pad_bits_after = "1")]
     pub assigned_mode: AssignedMode,
-    #[deku(read_all)]
-    pub name_extension: Vec<SixBitAscii>, // TODO may need padding
+    pub name_extension: SixBitString, // TODO may need padding
 }
 
 /// Message 22: Management of channels and transceiver modes by a Base station.
