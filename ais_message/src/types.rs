@@ -4,10 +4,10 @@
 
 //! Common types.
 
+use ais_sixbit::SixBitText;
 use ais_types::OutOfRange;
 use chrono::{DateTime, Datelike, Timelike, Utc};
 use deku::{DekuRead, DekuWrite, deku_derive};
-use ais_sixbit::SixBitText;
 
 /// Indicates how many times a message has been repeated.
 #[repr(u8)]
@@ -30,7 +30,7 @@ impl Default for RepeatCount {
 }
 
 /// Maritime Mobile Service Identity.
-#[deku_derive(DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 pub struct MMSI(#[deku(bits = "30", endian = "big")] u32);
 impl MMSI {
     /// Create a new MMS identifier.
@@ -41,6 +41,12 @@ impl MMSI {
             ..=999_999_999 => Ok(MMSI(mmsi)),
             _ => Err(OutOfRange),
         }
+    }
+}
+
+impl From<MMSI> for u32 {
+    fn from(mmsi: MMSI) -> Self {
+        mmsi.0
     }
 }
 
@@ -715,4 +721,3 @@ pub enum ReportingInterval {
     #[deku(id_pat = "_")]
     Other(u8),
 }
-
