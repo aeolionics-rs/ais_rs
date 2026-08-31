@@ -33,6 +33,23 @@ pub struct Version(#[deku(bits = 3)] pub u8);
 #[derive(DekuRead, DekuWrite)]
 pub struct Linkage(#[deku(bits = 10, endian = "big")] pub u16);
 
+#[derive(DekuRead, DekuWrite)]
+pub struct Capability(#[deku(bits = "1", pad_bits_after = "1")] pub bool);
+
+#[repr(u8)]
+#[derive(DekuRead, DekuWrite)]
+#[deku(bits = 3, id_type="u8")]
+pub enum ApplicationResponse{
+    UnableToResponse = 0,
+    ReceptionAcknowledged = 1,
+    ResponseToFollow = 2,
+    Inhibited = 3,
+    Reserved4 = 4,
+    Reserved5 = 5,
+    Reserved6 = 6,
+    Reserved7 = 7,
+}
+
 #[allow(non_camel_case_types)]
 #[derive(DekuRead, DekuWrite)]
 #[deku(id_type = "ApplicationId")]
@@ -45,6 +62,27 @@ pub enum Addressed {
         sequence: u16,
         text: SixBitString,
         // TODO add padding to byte boundary
+    },
+    #[deku(id = "ApplicationId(DAC(1), Function(2))")]
+    FunctionInterrogation {
+        #[deku(pad_bits_after = "64")]
+        request: ApplicationId,
+    },
+    #[deku(id = "ApplicationId(DAC(1), Function(3))")]
+    CapabilityInterrogation {
+        #[deku(pad_bits_after = "70")]
+        request: DAC,
+    },
+    #[deku(id = "ApplicationId(DAC(1), Function(4))")]
+    CapabilityReply { dac: DAC, functions: [Capability; 64] },
+    #[deku(id = "ApplicationId(DAC(1), Function(5))")]
+    ApplicationAcknowledgement{
+        requested: ApplicationId,
+        #[deku(bits = 11, endian = "big")]
+        sequence: u16,
+        is_available: bool,
+        #[deku(pad_bits_after = "49")]
+        response: ApplicationResponse,
     },
     #[deku(id = "ApplicationId(DAC(1), Function(23))")]
     AreaNotice(AreaNotice),
