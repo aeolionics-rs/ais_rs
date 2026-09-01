@@ -8,6 +8,7 @@ members = [
 ]
 
 [workspace.package]
+version = "0.2.0"
 edition = "2024"
 license = "Apache-2.0"
 description = "Library for working with ITU-R M.1371 AIS Messages"
@@ -17,5 +18,10 @@ keywords = ["ais", "m1371", "itu", "nmea"]
 categories = ["parser-implementations"]
 
 [workspace.dependencies]
+ais_asm = { version = "0.2.0", path = "ais_asm" }
+ais_message = { version = "0.2.0", path = "ais_message" }
+ais_types = { version = "0.2.0", path = "ais_types" }
+ais_sixbit = { version = "0.2.0", path = "ais_sixbit" }
+
 deku = "0.20.3"
 chrono = "0.4.45"

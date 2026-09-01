@@ -1,6 +1,6 @@
 [package]
 name = "ais_asm"
-version = "0.1.0"
+version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -10,7 +10,6 @@ categories.workspace = true
 description = "AIS Application Specific Messages"
 
 [dependencies]
-ais_types = { version = "0.1.0", path = "../ais_types" }
-ais_sixbit = { version = "0.1.0", path = "../ais_sixbit" }
+ais_types = { workspace = true }
+ais_sixbit = { workspace = true }
 deku = { workspace = true }
-chrono = { workspace = true }
