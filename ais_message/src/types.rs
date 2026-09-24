@@ -11,7 +11,7 @@ use deku::{DekuRead, DekuWrite, deku_derive};
 
 /// Indicates how many times a message has been repeated.
 #[repr(u8)]
-#[deku_derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum RepeatCount {
     /// Original message (default).
@@ -53,7 +53,7 @@ impl From<MMSI> for u32 {
 /// Version of the AIS standard being used.
 #[repr(u8)]
 #[non_exhaustive]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum AisVersion {
     M1371_1 = 0,
@@ -63,7 +63,7 @@ pub enum AisVersion {
 }
 
 /// Information about the equipment and its manufacturer.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 #[deku(endian = "big")]
 pub struct Manufacturer {
     /// Manufacturer code assigned by NMEA/SAE.
@@ -84,7 +84,7 @@ pub struct ImoNumber(#[deku(bits = "30")] pub u32);
 
 /// The type of ship.
 #[allow(non_camel_case_types)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8")]
 pub enum ShipType {
     #[deku(id = "0")]
@@ -255,7 +255,7 @@ pub enum ShipType {
 
 /// Ship's navigational status.
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "4")]
 pub enum NavigationalStatus {
     /// Vessel is under way under power.
@@ -295,7 +295,7 @@ impl Default for NavigationalStatus {
 }
 
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum SatelliteTxControl {
     Stop = 0,
@@ -303,7 +303,7 @@ pub enum SatelliteTxControl {
 }
 
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum AssignedMode {
     Autonomous = 0,
@@ -359,7 +359,7 @@ pub struct OverallDimension {
 }
 
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "4")]
 pub enum PositioningDevice {
     NotAvailable = 0,
@@ -425,7 +425,7 @@ impl Default for UtcDateTime {
 #[derive(DekuRead, DekuWrite)]
 pub struct QuietTime(#[deku(bits = 4)] pub u32);
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Clone, Copy, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "6")]
 pub enum Timestamp {
     #[deku(id_pat = "0..60")]
@@ -450,6 +450,18 @@ impl Timestamp {
 impl Default for Timestamp {
     fn default() -> Self {
         Self::Unavailable
+    }
+}
+
+impl From<Timestamp> for u8 {
+    fn from(value: Timestamp) -> Self {
+        match value {
+            Timestamp::Second(second) => second,
+            Timestamp::Unavailable => 60,
+            Timestamp::Manual => 61,
+            Timestamp::Estimated => 62,
+            Timestamp::Inoperative => 63,
+        }
     }
 }
 
@@ -499,7 +511,7 @@ pub struct Altitude(#[deku(bits = 12, endian = "big")] pub u16);
 ///
 /// See M-1371 Table 48.
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum RaimFlag {
     /// RAIM is not in use.
@@ -515,7 +527,7 @@ impl Default for RaimFlag {
 
 /// Position accuracy based on M-1371 Table 48.
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum PositionAccuracy {
     /// Accuracy > 10m (default)
@@ -531,7 +543,7 @@ impl Default for PositionAccuracy {
 }
 
 /// Station position, stored at a resolution of 1/10_000 minute.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Copy, Clone, DekuRead, DekuWrite)]
 pub struct StationPosition {
     pub accuracy: PositionAccuracy,
     #[deku(bits = 28, endian = "big")]
@@ -569,6 +581,12 @@ impl TryFrom<(f64, f64)> for StationPosition {
             return Err(OutOfRange);
         }
         Ok(Self::new(latitude, longitude, Default::default()))
+    }
+}
+
+impl From<StationPosition> for (f64, f64) {
+    fn from(value: StationPosition) -> Self {
+        ((value.latitude as f64) / 60.0 / 10_000.0, (value.longitude as f64) / 60.0 / 10_000.0)
     }
 }
 

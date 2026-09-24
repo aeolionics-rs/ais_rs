@@ -81,6 +81,45 @@ impl<const SIZE: usize> FromStr for SixBitText<SIZE> {
     }
 }
 
+impl<const SIZE: usize> SixBitText<SIZE> {
+    /// Iterate over the characters as standard ASCII, including any padding.
+    pub fn iter(&self) -> SixBitIter<'_> {
+        SixBitIter(self.0.iter())
+    }
+}
+
+/// An iterator over the characters of a [`SixBitText`] or [`SixBitString`] as standard ASCII.
+pub struct SixBitIter<'a>(std::slice::Iter<'a, SixBitAscii>);
+
+impl Iterator for SixBitIter<'_> {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|ch| u8::from(*ch))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+}
+
+impl DoubleEndedIterator for SixBitIter<'_> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|ch| u8::from(*ch))
+    }
+}
+
+impl ExactSizeIterator for SixBitIter<'_> {}
+
+impl<'a, const SIZE: usize> IntoIterator for &'a SixBitText<SIZE> {
+    type Item = u8;
+    type IntoIter = SixBitIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 impl<const SIZE: usize> Display for SixBitText<SIZE> {
     /// Display 6-bit ASCII text.
     ///
@@ -97,10 +136,32 @@ impl<const SIZE: usize> Display for SixBitText<SIZE> {
     }
 }
 
+
+
 #[derive(DekuRead, DekuWrite)]
 pub struct SixBitString {
     #[deku(read_all)]
     value: Vec<SixBitAscii>,
+}
+
+impl SixBitString {
+    pub fn len(&self) -> usize {
+        self.value.len()
+    }
+
+    /// Iterate over the characters as standard ASCII.
+    pub fn iter(&self) -> SixBitIter<'_> {
+        SixBitIter(self.value.iter())
+    }
+}
+
+impl<'a> IntoIterator for &'a SixBitString {
+    type Item = u8;
+    type IntoIter = SixBitIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
 }
 
 impl FromStr for SixBitString {
@@ -129,4 +190,24 @@ impl Display for SixBitString {
 fn test_chars() {
     assert_eq!(b'W', SixBitAscii(23).try_into().unwrap());
     assert_eq!(u8::from(SixBitAscii(52)), b'4');
+}
+
+#[cfg(test)]
+#[test]
+fn test_text_iter() {
+    let text = SixBitText::<8>::from_str("HELLO").unwrap();
+    assert_eq!(text.iter().collect::<Vec<u8>>(), b"HELLO@@@");
+    assert_eq!(text.iter().len(), 8);
+    assert_eq!(text.iter().next_back(), Some(b'@'));
+    assert_eq!(text.into_iter().take(2).collect::<Vec<u8>>(), b"HE");
+}
+
+#[cfg(test)]
+#[test]
+fn test_string_iter() {
+    let text = SixBitString::from_str("AIS").unwrap();
+    assert_eq!(text.iter().collect::<Vec<u8>>(), b"AIS");
+    assert_eq!(text.iter().len(), 3);
+    assert_eq!(text.iter().next_back(), Some(b'S'));
+    assert_eq!(text.into_iter().take(2).collect::<Vec<u8>>(), b"AI");
 }
