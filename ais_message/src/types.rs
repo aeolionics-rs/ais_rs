@@ -461,7 +461,7 @@ impl Default for AtonType {
 
 #[derive(DekuRead, DekuWrite)]
 pub struct UtcDateTime {
-    #[deku(bits = 14)]
+    #[deku(bits = 14, endian = "big")]
     pub year: u16,
     #[deku(bits = 4)]
     pub month: u8,

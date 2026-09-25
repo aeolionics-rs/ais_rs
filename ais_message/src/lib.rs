@@ -136,4 +136,60 @@ mod test {
         let result = msg.to_bits().unwrap();
         assert_eq!(result.len(), 168);
     }
+
+    /// Decode an armored AIVDM payload.
+    fn decode(payload: &str) -> Message {
+        let mut bits = deku::bitvec::BitVec::<u8, deku::bitvec::Msb0>::new();
+        for ch in payload.bytes() {
+            let value = match ch - 48 {
+                value @ 0..40 => value,
+                value => value - 8,
+            };
+            for i in (0..6).rev() {
+                bits.push(value >> i & 1 == 1);
+            }
+        }
+        bits.set_uninitialized(false);
+        Message::from_bytes((bits.as_raw_slice(), 0)).unwrap().1
+    }
+
+    #[test]
+    fn type4_year() {
+        let Message::BaseStationReport(report) = decode("403OviQuMGCqWrRO9>E6fE700@GO") else { panic!() };
+        let utc = report.utc_datetime;
+        assert_eq!((utc.year, utc.month, utc.day), (2007, 5, 14));
+        assert_eq!((utc.hour, utc.minute, utc.second), (19, 57, 39));
+    }
+
+    #[test]
+    fn type18_position() {
+        let Message::StandardClassBReport(report) = decode("B52K>;h00Fc>jpUlNV@ikwpUoP06") else { panic!() };
+        assert_eq!(u32::from(report.source), 338087471);
+        let (latitude, longitude) = report.position.into();
+        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (406845.0, -740721.0));
+        assert_eq!(report.heading.0, 511);
+    }
+
+    #[test]
+    fn type19_position() {
+        let Message::ExtendedClassBReport(report) = decode("C5N3SRgPEnJGEBT>NhWAwwo862PaLELTBJ:V00000000S0D:R220") else { panic!() };
+        assert_eq!(u32::from(report.source), 367059850);
+        let (latitude, longitude) = report.position.into();
+        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (295437.0, -888104.0));
+        assert_eq!(report.name.to_string(), "CAPT.J.RIMES");
+    }
+
+    #[test]
+    fn type24_parts() {
+        let Message::StaticDataReport(report) = decode("H42O55i18tMET00000000000000") else { panic!() };
+        assert_eq!(u32::from(report.source), 271041815);
+        let message::StaticDataPart::PartA(name) = report.data else { panic!("not part A") };
+        assert_eq!(name.to_string(), "PROGUY");
+
+        let Message::StaticDataReport(report) = decode("H42O55lti4hhhilD3nink000?050") else { panic!() };
+        assert_eq!(u32::from(report.source), 271041815);
+        let message::StaticDataPart::PartB { ship_type: ShipType::Passenger, call_sign, dimension, .. } = report.data else { panic!("not passenger part B") };
+        assert_eq!(call_sign.to_string(), "TC6163");
+        assert_eq!((dimension.a, dimension.b, dimension.c, dimension.d), (0, 15, 0, 5));
+    }
 }

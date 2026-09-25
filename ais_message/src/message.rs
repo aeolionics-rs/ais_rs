@@ -241,7 +241,7 @@ pub struct GnssBroadcast {
 #[derive(DekuRead, DekuWrite)]
 pub struct StandardClassBReport {
     pub repeat: RepeatCount,
-    #[deku(pad_bits_after = "2")]
+    #[deku(pad_bits_after = "8")]
     pub source: MMSI,
     pub speed_over_ground: SpeedOverGround,
     pub position: StationPosition,
@@ -270,7 +270,7 @@ pub struct StandardClassBReport {
 #[derive(DekuRead, DekuWrite)]
 pub struct ExtendedClassBReport {
     pub repeat: RepeatCount,
-    #[deku(pad_bits_after = "2")]
+    #[deku(pad_bits_after = "8")]
     pub source: MMSI,
     pub speed_over_ground: SpeedOverGround,
     pub position: StationPosition,
@@ -400,7 +400,6 @@ pub enum StaticDataPart {
 #[derive(DekuRead, DekuWrite)]
 pub struct StaticData {
     pub repeat: RepeatCount,
-    #[deku(pad_bits_after = "2")]
     pub source: MMSI,
     pub data: StaticDataPart,
 }
