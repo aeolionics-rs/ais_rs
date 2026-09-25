@@ -68,13 +68,13 @@ pub enum AisVersion {
 pub struct Manufacturer {
     /// Manufacturer code assigned by NMEA/SAE.
     #[deku(bits = 18)]
-    id: u32,
+    pub id: u32,
     /// Equipment model identifier.
     #[deku(bits = 4)]
-    model: u32,
+    pub model: u32,
     /// Equipment serial number.
     #[deku(bits = 20)]
-    serial: u32,
+    pub serial: u32,
 }
 
 /// A vessel's IMO number.
@@ -690,8 +690,8 @@ pub struct GnssPosition {
 
 #[derive(DekuRead, DekuWrite)]
 pub struct GnssArea {
-    upper_right: GnssPosition,
-    lower_left: GnssPosition,
+    pub upper_right: GnssPosition,
+    pub lower_left: GnssPosition,
 }
 
 /// Indicates if the vessel is performing a special manoeuvre.
