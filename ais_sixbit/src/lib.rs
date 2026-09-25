@@ -126,7 +126,7 @@ impl<const SIZE: usize> Display for SixBitText<SIZE> {
     /// Any trailing 0 characters (ASCII '@') will be omitted.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut last = SIZE;
-        while last > 0 && self.0[last - 1] == 0u8.try_into().unwrap() {
+        while last > 0 && self.0[last - 1] == SixBitAscii(0) {
             last -= 1;
         }
         for ch in self.0[..last].iter() {
@@ -210,4 +210,11 @@ fn test_string_iter() {
     assert_eq!(text.iter().len(), 3);
     assert_eq!(text.iter().next_back(), Some(b'S'));
     assert_eq!(text.into_iter().take(2).collect::<Vec<u8>>(), b"AI");
+}
+
+#[cfg(test)]
+#[test]
+fn test_text_display() {
+    let text = SixBitText::<7>::from_str("AIS").unwrap();
+    assert_eq!(text.to_string(), "AIS");
 }
