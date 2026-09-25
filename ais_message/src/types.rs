@@ -380,6 +380,85 @@ pub enum PositioningDevice {
     InternalGNSS = 15,
 }
 
+/// The type of aid-to-navigation (ITU-R M.1371-6, Annex A7-3.19.1, Table 72).
+///
+/// Fixed AtoN are values 5 to 19, floating AtoN are values 20 to 31.
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, DekuRead, DekuWrite)]
+#[deku(id_type = "u8", bits = "5")]
+pub enum AtonType {
+    /// Default, type of AtoN not specified.
+    NotSpecified = 0,
+    /// Reference point.
+    ReferencePoint = 1,
+    /// RACON.
+    Racon = 2,
+    /// Fixed structure off shore, such as oil platforms, wind farms and rigs.
+    FixedStructure = 3,
+    /// Emergency wreck marking buoy.
+    EmergencyWreckMarkingBuoy = 4,
+    /// Light, without sectors.
+    Light = 5,
+    /// Light, with sectors.
+    SectorLight = 6,
+    /// Leading light front.
+    LeadingLightFront = 7,
+    /// Leading light rear.
+    LeadingLightRear = 8,
+    /// Beacon, cardinal N.
+    BeaconCardinalNorth = 9,
+    /// Beacon, cardinal E.
+    BeaconCardinalEast = 10,
+    /// Beacon, cardinal S.
+    BeaconCardinalSouth = 11,
+    /// Beacon, cardinal W.
+    BeaconCardinalWest = 12,
+    /// Beacon, port hand.
+    BeaconPortHand = 13,
+    /// Beacon, starboard hand.
+    BeaconStarboardHand = 14,
+    /// Beacon, preferred channel port hand.
+    BeaconPreferredChannelPortHand = 15,
+    /// Beacon, preferred channel starboard hand.
+    BeaconPreferredChannelStarboardHand = 16,
+    /// Beacon, isolated danger.
+    BeaconIsolatedDanger = 17,
+    /// Beacon, safe water.
+    BeaconSafeWater = 18,
+    /// Beacon, special mark.
+    BeaconSpecialMark = 19,
+    /// Cardinal mark N.
+    CardinalNorth = 20,
+    /// Cardinal mark E.
+    CardinalEast = 21,
+    /// Cardinal mark S.
+    CardinalSouth = 22,
+    /// Cardinal mark W.
+    CardinalWest = 23,
+    /// Port hand mark.
+    PortHand = 24,
+    /// Starboard hand mark.
+    StarboardHand = 25,
+    /// Preferred channel port hand.
+    PreferredChannelPortHand = 26,
+    /// Preferred channel starboard hand.
+    PreferredChannelStarboardHand = 27,
+    /// Isolated danger.
+    IsolatedDanger = 28,
+    /// Safe water.
+    SafeWater = 29,
+    /// Special mark.
+    SpecialMark = 30,
+    /// Light vessel, LANBY or rigs.
+    LightVessel = 31,
+}
+
+impl Default for AtonType {
+    fn default() -> Self {
+        AtonType::NotSpecified
+    }
+}
+
 #[derive(DekuRead, DekuWrite)]
 pub struct UtcDateTime {
     #[deku(bits = 14)]

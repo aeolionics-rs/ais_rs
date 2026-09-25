@@ -8,7 +8,7 @@ use deku::{DekuRead, DekuWrite};
 use ais_asm::{Addressed, Broadcast};
 use ais_sixbit::SixBitString;
 use ais_types::MonthDayHourMinute;
-use crate::types::{AisVersion, Altitude, AltitudeSensor, AssignedMode, CallSign, CommunicationState, CommunicationStateType, CourseOverGround, DteReady, GnssArea, GnssPosition, Heading, ImoNumber, Manufacturer, Name, NavigationalStatus, OverallDimension, PositionAccuracy, PositionLatency, PositioningDevice, QuietTime, RaimFlag, RateOfTurn, RepeatCount, ReportingInterval, SatelliteTxControl, Sequence, ShipType, SpecialManoeuvre, SpeedOverGround, StationPosition, StationSelection, Timestamp, TransmitPower, TxRxMode, UtcDateTime, VdesCapability, MMSI};
+use crate::types::{AisVersion, Altitude, AltitudeSensor, AssignedMode, AtonType, CallSign, CommunicationState, CommunicationStateType, CourseOverGround, DteReady, GnssArea, GnssPosition, Heading, ImoNumber, Manufacturer, Name, NavigationalStatus, OverallDimension, PositionAccuracy, PositionLatency, PositioningDevice, QuietTime, RaimFlag, RateOfTurn, RepeatCount, ReportingInterval, SatelliteTxControl, Sequence, ShipType, SpecialManoeuvre, SpeedOverGround, StationPosition, StationSelection, Timestamp, TransmitPower, TxRxMode, UtcDateTime, VdesCapability, MMSI};
 
 /// Message 1,2,3: a position report sent by a mobile, Class A station.
 ///
@@ -315,8 +315,7 @@ pub struct DataLinkManagement {
 pub struct AtonReport {
     pub repeat: RepeatCount,
     pub source: MMSI,
-    #[deku(bits = 5)]
-    pub aton_type: u8,
+    pub aton_type: AtonType,
     pub name: Name,
     pub position: StationPosition,
     pub overall_dimension: OverallDimension,
