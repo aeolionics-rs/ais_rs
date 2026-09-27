@@ -7,7 +7,7 @@ use deku::{DekuRead, DekuWrite};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct MonthDayHourMinute {
     #[deku(bits = 4)]
     pub month: u8,
@@ -36,7 +36,7 @@ impl Default for MonthDayHourMinute {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Minutes(#[deku(bits = 18, endian = "big")] pub u32);
 
 #[derive(Debug)]

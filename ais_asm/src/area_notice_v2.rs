@@ -12,7 +12,7 @@ use deku::{DekuRead, DekuWrite};
 ///
 /// This modified SubArea position to increase precision
 /// but removed the indicator from Rectangle and Sector.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct AreaNoticeV2 {
     pub linkage: Linkage,
     pub description: Description,
@@ -25,7 +25,7 @@ pub struct AreaNoticeV2 {
 /// SubArea definition, version 2.
 ///
 /// This version requires 90 bits.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = 3)]
 pub enum SubArea {
     #[deku(id = 0)]
@@ -54,7 +54,7 @@ pub enum SubArea {
     AssociatedText(#[deku(pad_bits_after = "3")] SixBitText<14>),
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Position {
     #[deku(bits = "28", endian = "big")]
     longitude: i32,
@@ -105,7 +105,7 @@ impl Default for Position {
 }
 
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Leg {
     #[deku(bits = "10", endian = "big")]
     pub angle: u16,
@@ -113,7 +113,7 @@ pub struct Leg {
     pub distance: u16,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Shape {
     pub scale: Scale,
     pub points: [Leg; 4],

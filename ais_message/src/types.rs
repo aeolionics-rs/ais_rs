@@ -11,7 +11,7 @@ use deku::{DekuRead, DekuWrite, deku_derive};
 
 /// Indicates how many times a message has been repeated.
 #[repr(u8)]
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum RepeatCount {
     /// Original message (default).
@@ -53,7 +53,7 @@ impl From<MMSI> for u32 {
 /// Version of the AIS standard being used.
 #[repr(u8)]
 #[non_exhaustive]
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum AisVersion {
     M1371_1 = 0,
@@ -63,7 +63,7 @@ pub enum AisVersion {
 }
 
 /// Information about the equipment and its manufacturer.
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 #[deku(endian = "big")]
 pub struct Manufacturer {
     /// Manufacturer code assigned by NMEA/SAE.
@@ -79,12 +79,13 @@ pub struct Manufacturer {
 
 /// A vessel's IMO number.
 #[deku_derive(DekuRead, DekuWrite)]
+#[derive(Debug)]
 #[deku(endian = "big")]
 pub struct ImoNumber(#[deku(bits = "30")] pub u32);
 
 /// The type of ship.
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8")]
 pub enum ShipType {
     #[deku(id = "0")]
@@ -255,7 +256,7 @@ pub enum ShipType {
 
 /// Ship's navigational status.
 #[repr(u8)]
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "4")]
 pub enum NavigationalStatus {
     /// Vessel is under way under power.
@@ -295,7 +296,7 @@ impl Default for NavigationalStatus {
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum SatelliteTxControl {
     Stop = 0,
@@ -303,7 +304,7 @@ pub enum SatelliteTxControl {
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum AssignedMode {
     Autonomous = 0,
@@ -312,7 +313,7 @@ pub enum AssignedMode {
 
 #[allow(non_camel_case_types)]
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum AltitudeSensor {
     GNSS = 0,
@@ -321,7 +322,7 @@ pub enum AltitudeSensor {
 
 #[allow(non_camel_case_types)]
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum CommunicationStateType {
     SOTDMA = 0,
@@ -329,6 +330,7 @@ pub enum CommunicationStateType {
 }
 
 #[deku_derive(DekuRead, DekuWrite)]
+#[derive(Debug)]
 pub struct CommunicationState {
     #[deku(bits = 2)]
     pub sync: u8,
@@ -339,14 +341,14 @@ pub struct CommunicationState {
 }
 
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum DteReady {
     Available = 0,
     NotAvailable = 1,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct OverallDimension {
     #[deku(bits = "9", endian = "big")]
     pub a: u16,
@@ -359,7 +361,7 @@ pub struct OverallDimension {
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "4")]
 pub enum PositioningDevice {
     NotAvailable = 0,
@@ -459,7 +461,7 @@ impl Default for AtonType {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct UtcDateTime {
     #[deku(bits = 14, endian = "big")]
     pub year: u16,
@@ -501,10 +503,10 @@ impl Default for UtcDateTime {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct QuietTime(#[deku(bits = 4)] pub u32);
 
-#[derive(Clone, Copy, DekuRead, DekuWrite)]
+#[derive(Debug, Clone, Copy, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "6")]
 pub enum Timestamp {
     #[deku(id_pat = "0..60")]
@@ -547,7 +549,7 @@ impl From<Timestamp> for u8 {
 pub type Name = SixBitText<20>;
 
 pub type CallSign = SixBitText<7>;
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct RateOfTurn(#[deku(bits = 8)] pub i8);
 
 impl Default for RateOfTurn {
@@ -556,7 +558,7 @@ impl Default for RateOfTurn {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct SpeedOverGround(#[deku(bits = 10, endian = "big")] pub u16);
 
 impl Default for SpeedOverGround {
@@ -565,7 +567,7 @@ impl Default for SpeedOverGround {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct CourseOverGround(#[deku(bits = 12, endian = "big")] pub u16);
 
 impl Default for CourseOverGround {
@@ -574,7 +576,7 @@ impl Default for CourseOverGround {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Heading(#[deku(bits = 9, endian = "big")] pub u16);
 
 impl Default for Heading {
@@ -583,14 +585,14 @@ impl Default for Heading {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Altitude(#[deku(bits = 12, endian = "big")] pub u16);
 
 /// Receiver autonomous integrity monitoring (RAIM) indicator.
 ///
 /// See M-1371 Table 48.
 #[repr(u8)]
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum RaimFlag {
     /// RAIM is not in use.
@@ -606,7 +608,7 @@ impl Default for RaimFlag {
 
 /// Position accuracy based on M-1371 Table 48.
 #[repr(u8)]
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum PositionAccuracy {
     /// Accuracy > 10m (default)
@@ -622,7 +624,7 @@ impl Default for PositionAccuracy {
 }
 
 /// Station position, stored at a resolution of 1/10_000 minute.
-#[derive(Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 pub struct StationPosition {
     pub accuracy: PositionAccuracy,
     #[deku(bits = 28, endian = "big")]
@@ -679,7 +681,7 @@ impl Default for StationPosition {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(endian = "big")]
 pub struct GnssPosition {
     #[deku(bits = 18)]
@@ -688,7 +690,7 @@ pub struct GnssPosition {
     pub latitude: i32,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct GnssArea {
     pub upper_right: GnssPosition,
     pub lower_left: GnssPosition,
@@ -696,7 +698,7 @@ pub struct GnssArea {
 
 /// Indicates if the vessel is performing a special manoeuvre.
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum SpecialManoeuvre {
     /// Information is not available (default).
@@ -717,7 +719,7 @@ impl Default for SpecialManoeuvre {
 
 /// Transmitter output power.
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum TransmitPower {
     /// Transmitting in high power mode (default).
@@ -732,11 +734,11 @@ impl Default for TransmitPower {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Sequence(#[deku(bits = 2)] pub u8);
 
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum VdesCapability {
     AisOnly = 0,
@@ -746,7 +748,7 @@ pub enum VdesCapability {
 }
 
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum PositionLatency {
     Low = 0,
@@ -754,7 +756,7 @@ pub enum PositionLatency {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "4")]
 pub enum StationSelection {
     #[deku(id = "0")]
@@ -779,7 +781,7 @@ pub enum StationSelection {
 
 #[repr(u8)]
 #[allow(non_camel_case_types)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum TxRxMode {
     TxAB_RxAB = 0,
@@ -788,7 +790,7 @@ pub enum TxRxMode {
     Reserved = 3,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "4")]
 pub enum ReportingInterval {
     #[deku(id = "0")]

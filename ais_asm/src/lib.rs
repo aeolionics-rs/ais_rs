@@ -26,18 +26,18 @@ pub struct Function(#[deku(bits = 6)] pub u8);
 pub struct ApplicationId(pub DAC, pub Function);
 
 /// Common type for a message version.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Version(#[deku(bits = 3)] pub u8);
 
 /// Identifier linking together a group of messages from the same source.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Linkage(#[deku(bits = 10, endian = "big")] pub u16);
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Capability(#[deku(bits = "1", pad_bits_after = "1")] pub bool);
 
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(bits = 3, id_type="u8")]
 pub enum ApplicationResponse{
     UnableToResponse = 0,
@@ -51,7 +51,7 @@ pub enum ApplicationResponse{
 }
 
 #[allow(non_camel_case_types)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "ApplicationId")]
 pub enum Addressed {
     #[deku(id = "ApplicationId(DAC(1), Function(0))")]
@@ -93,7 +93,7 @@ pub enum Addressed {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "ApplicationId")]
 pub enum Broadcast {
     #[deku(id = "ApplicationId(DAC(1), Function(0))")]

@@ -15,7 +15,7 @@ use crate::types::{AisVersion, Altitude, AltitudeSensor, AssignedMode, AtonType,
 /// Messages 1, 2 and 3 all use the same data structure.
 /// The message type is used to indicate the transmission window that was used
 /// (autonomous, assigned, or by request, respectively).
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct PositionReport {
     pub repeat: RepeatCount,
     pub source: MMSI,
@@ -56,7 +56,7 @@ impl PositionReport {
 }
 
 /// Message 9: Position report for airborne stations involved in SAR operations.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct AircraftPositionReport {
     pub repeat: RepeatCount,
     pub source: MMSI,
@@ -77,7 +77,7 @@ pub struct AircraftPositionReport {
 
 /// Message 4: UTC, date and current slot number of base station.
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct BaseStationReport {
     pub repeat: RepeatCount,
     pub source: MMSI,
@@ -91,7 +91,7 @@ pub struct BaseStationReport {
 }
 
 /// Message 5: Scheduled static and voyage related vessel data report from a Class A AIS station.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct ShipStaticData {
     pub repeat: RepeatCount,
     pub source: MMSI,
@@ -111,7 +111,7 @@ pub struct ShipStaticData {
 
 /// Message 6: An application-specific message address to a specific station.
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct AddressedApplicationMessage {
     pub repeat: RepeatCount,
     pub source: MMSI,
@@ -123,14 +123,14 @@ pub struct AddressedApplicationMessage {
     pub message: Addressed,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct AcknowledgmentDestination {
     pub destination: MMSI,
     pub sequence: Sequence,
 }
 
 /// Message 7, 13: Acknowledgement of an application-specific or safety message.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Acknowledgement {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
@@ -140,7 +140,7 @@ pub struct Acknowledgement {
 }
 
 /// Message 8: An application-specific message broadcast to all stations.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct BroadcastApplicationMessage {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
@@ -149,7 +149,7 @@ pub struct BroadcastApplicationMessage {
 }
 
 /// Message 10: Request UTC and date.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 
 pub struct UtcInquiry {
     pub repeat: RepeatCount,
@@ -165,7 +165,7 @@ pub struct UtcInquiry {
 pub type UtcResponse = BaseStationReport;
 
 /// Message 12: A safety-related message address to a specific station.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct AddressedSafetyMessage {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
@@ -178,7 +178,7 @@ pub struct AddressedSafetyMessage {
     pub text: SixBitString,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 /// Message 14: A safety-related message broadcast to all stations.
 pub struct BroadcastSafetyMessage {
     pub repeat: RepeatCount,
@@ -187,7 +187,7 @@ pub struct BroadcastSafetyMessage {
     pub text: SixBitString,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct InterrogationDestination {
     pub destination: MMSI,
     #[deku(bits = 6)]
@@ -197,7 +197,7 @@ pub struct InterrogationDestination {
 }
 
 /// Message 15: Request for a specific message type.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Interrogation {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
@@ -206,7 +206,7 @@ pub struct Interrogation {
     pub destinations: Vec<InterrogationDestination>,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Assignment {
     pub destination: MMSI,
     #[deku(bits = 12, endian = "big")]
@@ -215,7 +215,7 @@ pub struct Assignment {
     pub increment: u16,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 /// Message 16: Assignment of a specific report behaviour by competent authority using a Base station.
 pub struct AssignedModeCommand {
     pub repeat: RepeatCount,
@@ -226,7 +226,7 @@ pub struct AssignedModeCommand {
 }
 
 /// Message 17: DGNSS corrections provided by a base station.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct GnssBroadcast {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
@@ -238,7 +238,7 @@ pub struct GnssBroadcast {
 }
 
 /// Message 18: Standard Position Report from a Class B AIS station.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct StandardClassBReport {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "8")]
@@ -267,7 +267,7 @@ pub struct StandardClassBReport {
 }
 
 /// Message 19: Extended Position Report from a Class B AIS station (deprecated).
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct ExtendedClassBReport {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "8")]
@@ -288,7 +288,7 @@ pub struct ExtendedClassBReport {
     pub assigned_mode: AssignedMode,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Reservation {
     #[deku(bits = 12, endian = "big")]
     pub offset: u16,
@@ -301,7 +301,7 @@ pub struct Reservation {
 }
 
 /// Message 20: Reserve slots for Base station(s).
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct DataLinkManagement {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
@@ -311,7 +311,7 @@ pub struct DataLinkManagement {
 }
 
 /// Message 21: Position and status report for aids-to-navigation.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct AtonReport {
     pub repeat: RepeatCount,
     pub source: MMSI,
@@ -333,7 +333,7 @@ pub struct AtonReport {
 }
 
 /// Message 22: Management of channels and transceiver modes by a Base station.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct ChannelManagement {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
@@ -356,7 +356,7 @@ pub struct ChannelManagement {
     pub transitional_zone: u8,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct GroupSelection {
     pub area: GnssArea,
     pub stations: StationSelection,
@@ -365,7 +365,7 @@ pub struct GroupSelection {
 
 /// Message 23: Assignment of a specific report behaviour by competent authority using a Base
 /// station to a specific group of mobiles.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct GroupAssignment {
     pub repeat: RepeatCount,
     #[deku(pad_bits_after = "2")]
@@ -378,7 +378,7 @@ pub struct GroupAssignment {
     pub quiet_time: QuietTime,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum StaticDataPart {
     /// - Part A: Vessel Name
@@ -397,7 +397,7 @@ pub enum StaticDataPart {
 }
 
 /// Message 24: Additional data assigned to an MMSI:
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct StaticData {
     pub repeat: RepeatCount,
     pub source: MMSI,
@@ -405,7 +405,7 @@ pub struct StaticData {
 }
 
 /// Message 25: An application-specific message sent in a single slot.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct SingleSlotBinary {
     pub repeat: RepeatCount,
     pub source: MMSI,
@@ -418,7 +418,7 @@ pub struct SingleSlotBinary {
 }
 
 /// Message 26: An application-specific message sent in multiple slots.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct MultiSlotBinary {
     pub repeat: RepeatCount,
     pub source: MMSI,
@@ -431,7 +431,7 @@ pub struct MultiSlotBinary {
 }
 
 /// Message 27: A position report sent via satellite by stations outside base station coverage.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct AisSatellitePositionReport {
     pub repeat: RepeatCount,
     pub source: MMSI,
@@ -448,7 +448,7 @@ pub struct AisSatellitePositionReport {
 }
 
 /// Message 28: Position and status report for aids-to-navigation sent in a single slot.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct SingleSlotAtonReport {
     pub repeat: RepeatCount,
     pub source: MMSI,

@@ -15,7 +15,7 @@ use message::*;
 
 /// An AIS message.
 #[non_exhaustive]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "6")]
 pub enum Message {
     /// Message 1: Scheduled Position Report from a Class A AIS station.
@@ -137,8 +137,8 @@ mod test {
         assert_eq!(result.len(), 168);
     }
 
-    /// Decode an armored AIVDM payload.
-    fn decode(payload: &str) -> Message {
+    /// Decode an armored AIVDM payload, discarding any fill bits.
+    fn decode_with_fill(payload: &str, fill_bits: usize) -> Message {
         let mut bits = deku::bitvec::BitVec::<u8, deku::bitvec::Msb0>::new();
         for ch in payload.bytes() {
             let value = match ch - 48 {
@@ -149,8 +149,38 @@ mod test {
                 bits.push(value >> i & 1 == 1);
             }
         }
+        bits.truncate(bits.len() - fill_bits);
         bits.set_uninitialized(false);
         Message::from_bytes((bits.as_raw_slice(), 0)).unwrap().1
+    }
+
+    /// Decode an armored AIVDM payload.
+    fn decode(payload: &str) -> Message {
+        decode_with_fill(payload, 0)
+    }
+
+    /// Decode a single-sentence AIVDM/AIVDO sentence, discarding any fill bits.
+    fn decode_sentence(sentence: &str) -> Message {
+        let fields: Vec<&str> = sentence.split(',').collect();
+        let payload = fields[5];
+        let fill_bits = fields[6].split('*').next().unwrap().parse().unwrap();
+        decode_with_fill(payload, fill_bits)
+    }
+
+    #[test]
+    fn type21_aton() {
+        let Message::AtonReport(report) = decode_sentence("!AIVDM,1,1,,A,E=?eK;hab0b4WW5RR`2a0000000C@OBPvT340000002P10,4*53") else { panic!() };
+        assert_eq!(u32::from(report.source), 888888111);
+        assert_eq!(report.aton_type, AtonType::ReferencePoint);
+        assert_eq!(report.name.to_string(), "STATIONKEEPER");
+        let (latitude, longitude) = report.position.into();
+        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (-50218.0, 910902.0));
+        let dimension = report.overall_dimension;
+        assert_eq!((dimension.a, dimension.b, dimension.c, dimension.d), (0, 0, 0, 0));
+        assert!(matches!(report.timestamp, Timestamp::Second(5)));
+        assert!(!report.off_position);
+        assert!(report.virtual_aton);
+        assert_eq!(report.name_extension.len(), 0);
     }
 
     #[test]
@@ -191,5 +221,12 @@ mod test {
         let message::StaticDataPart::PartB { ship_type: ShipType::Passenger, call_sign, dimension, .. } = report.data else { panic!("not passenger part B") };
         assert_eq!(call_sign.to_string(), "TC6163");
         assert_eq!((dimension.a, dimension.b, dimension.c, dimension.d), (0, 15, 0, 5));
+    }
+
+    #[test]
+    fn debug() {
+        let debug = format!("{:?}", decode("H42O55i18tMET00000000000000"));
+        assert!(debug.starts_with("StaticDataReport(StaticData {"), "{debug}");
+        assert!(debug.contains("PartA(\"PROGUY@@@@@@@@@@@@@@\")"), "{debug}");
     }
 }

@@ -9,7 +9,7 @@ use deku::{DekuRead, DekuWrite};
 
 #[allow(non_camel_case_types)]
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = 7)]
 pub enum Description {
     // Cautions
@@ -171,13 +171,13 @@ pub enum Description {
     Undefined = 127,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Scale(#[deku(bits = "2")] pub u8);
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Radius(#[deku(bits = "12", endian = "big")] pub u16);
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Boundary {
     #[deku(bits = "8")]
     pub east: u8,
@@ -187,7 +187,7 @@ pub struct Boundary {
     pub orientation: u16,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct SectorBoundary {
     radius: Radius,
     #[deku(bits = "9", endian = "big")]
@@ -197,7 +197,7 @@ pub struct SectorBoundary {
 }
 
 /// Structure of an Area Notice message.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct AreaNotice {
     pub linkage: Linkage,
     pub description: Description,
@@ -210,7 +210,7 @@ pub struct AreaNotice {
 /// Original SubArea definition.
 ///
 /// This version requires 87 bits.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = 3)]
 pub enum SubArea {
     #[deku(id = 0)]
@@ -237,7 +237,7 @@ pub enum SubArea {
     AssociatedText(SixBitText<14>),
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Position {
     #[deku(bits = "25", endian = "big")]
     longitude: i32,
@@ -290,7 +290,7 @@ impl Default for Position {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Leg {
     #[deku(bits = "10", endian = "big")]
     pub angle: u16,
@@ -298,7 +298,7 @@ pub struct Leg {
     pub distance: u16,
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Shape {
     pub scale: Scale,
     pub points: [Leg; 4],

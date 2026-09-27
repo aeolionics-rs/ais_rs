@@ -12,7 +12,7 @@ use deku::{DekuRead, DekuWrite};
 ///
 /// This added version and action to the main message and added
 /// linkage for polyline and polygon sub-aras.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct GeographicNotice {
     #[deku(pad_bits_after = "3")]
     pub version: Version,
@@ -27,7 +27,7 @@ pub struct GeographicNotice {
 }
 
 #[repr(u8)]
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = 1)]
 pub enum Action {
     Advisement = 0,
@@ -37,7 +37,7 @@ pub enum Action {
 /// SubArea definition, version 2.
 ///
 /// This version requires 96 bits.
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = 3)]
 pub enum SubArea {
     #[deku(id = 0)]
@@ -70,7 +70,7 @@ pub enum SubArea {
     AssociatedText(#[deku(pad_bits_after = "3")] SixBitText<15>),
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Position {
     #[deku(bits = "28", endian = "big")]
     longitude: i32,
@@ -123,10 +123,10 @@ impl Default for Position {
     }
 }
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Link(#[deku(bits = "2")] pub u8);
 
-#[derive(DekuRead, DekuWrite)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub struct Shape {
     pub scale: Scale,
     pub points: [Leg; 4],

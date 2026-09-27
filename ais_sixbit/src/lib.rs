@@ -5,7 +5,7 @@
 //! Support for 6-bit text as defined in §A7-3 Table 45.
 
 use deku::{DekuRead, DekuWrite};
-use std::fmt::{Display, Write};
+use std::fmt::{Debug, Display, Write};
 use std::str::FromStr;
 
 /// A single 6-bit ASCII character.
@@ -51,6 +51,12 @@ impl From<SixBitAscii> for char {
     /// Conversion to a standard ASCII character.
     fn from(value: SixBitAscii) -> Self {
         SixBitAscii::ALPHABET[value.0 as usize] as char
+    }
+}
+
+impl Debug for SixBitAscii {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&char::from(*self), f)
     }
 }
 
@@ -136,7 +142,13 @@ impl<const SIZE: usize> Display for SixBitText<SIZE> {
     }
 }
 
-
+impl<const SIZE: usize> Debug for SixBitText<SIZE> {
+    /// Debug output as a quoted string, including any padding.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text: String = self.iter().map(char::from).collect();
+        Debug::fmt(&text, f)
+    }
+}
 
 #[derive(DekuRead, DekuWrite)]
 pub struct SixBitString {
@@ -185,6 +197,13 @@ impl Display for SixBitString {
     }
 }
 
+impl Debug for SixBitString {
+    /// Debug output as a quoted string.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.to_string(), f)
+    }
+}
+
 #[cfg(test)]
 #[test]
 fn test_chars() {
@@ -217,4 +236,13 @@ fn test_string_iter() {
 fn test_text_display() {
     let text = SixBitText::<7>::from_str("AIS").unwrap();
     assert_eq!(text.to_string(), "AIS");
+}
+
+#[cfg(test)]
+#[test]
+fn test_debug() {
+    let text = SixBitText::<5>::from_str("AIS").unwrap();
+    assert_eq!(format!("{text:?}"), "\"AIS@@\"");
+    let text = SixBitString::from_str("AIS").unwrap();
+    assert_eq!(format!("{text:?}"), "\"AIS\"");
 }
