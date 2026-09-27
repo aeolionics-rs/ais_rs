@@ -10,6 +10,7 @@ pub mod message;
 pub mod types;
 
 use std::fmt::{Binary, Formatter, Write};
+use deku::bitvec::{BitSlice, BitVec, Msb0};
 use deku::prelude::*;
 use message::*;
 
@@ -107,6 +108,24 @@ pub enum Message {
     SingleSlotAtonReport(SingleSlotAtonReport),
 }
 
+impl Message {
+    /// Decode a message from its bits.
+    ///
+    /// Unlike [`DekuContainerRead::from_bytes`], the message need not be a whole number of bytes:
+    /// a variable-length field at the end of the message, such as text or binary data, is read up
+    /// to the last bit rather than to the end of the last byte. Any bits following a fixed-length
+    /// message are ignored.
+    pub fn from_bits(bits: &BitSlice<u8, Msb0>) -> Result<Self, DekuError> {
+        // Decoding reads whole bytes, so pad before the message so that it ends on a byte boundary
+        // and start decoding after the padding.
+        let padding = (8 - bits.len() % 8) % 8;
+        let mut padded = BitVec::<u8, Msb0>::repeat(false, padding);
+        padded.extend_from_bitslice(bits);
+        let (_, message) = Message::from_bytes((padded.as_raw_slice(), padding))?;
+        Ok(message)
+    }
+}
+
 impl Binary for Message {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if let Ok(bits) = self.to_bits() {
@@ -150,8 +169,7 @@ mod test {
             }
         }
         bits.truncate(bits.len() - fill_bits);
-        bits.set_uninitialized(false);
-        Message::from_bytes((bits.as_raw_slice(), 0)).unwrap().1
+        Message::from_bits(&bits).unwrap()
     }
 
     /// Decode an armored AIVDM payload.
@@ -221,6 +239,46 @@ mod test {
         let message::StaticDataPart::PartB { ship_type: ShipType::Passenger, call_sign, dimension, .. } = report.data else { panic!("not passenger part B") };
         assert_eq!(call_sign.to_string(), "TC6163");
         assert_eq!((dimension.a, dimension.b, dimension.c, dimension.d), (0, 15, 0, 5));
+    }
+
+    #[test]
+    fn from_bits_text() {
+        // 70 bits, so the text would be followed by 2 bits of padding if decoded from bytes.
+        let msg = Message::BroadcastSafetyMessage(BroadcastSafetyMessage {
+            repeat: RepeatCount::Original,
+            source: MMSI::new(366999999).unwrap(),
+            text: "HELLO".parse().unwrap(),
+        });
+        let bits = msg.to_bits().unwrap();
+        assert_eq!(bits.len(), 70);
+        let Message::BroadcastSafetyMessage(decoded) = Message::from_bits(&bits).unwrap() else { panic!() };
+        assert_eq!(u32::from(decoded.source), 366999999);
+        assert_eq!(decoded.text.to_string(), "HELLO");
+    }
+
+    #[test]
+    fn from_bits_aton_name_extension() {
+        // A type 21 AtoN report with a 1 character name extension is 278 bits.
+        let Message::AtonReport(mut report) = decode_sentence("!AIVDM,1,1,,A,E=?eK;hab0b4WW5RR`2a0000000C@OBPvT340000002P10,4*53") else { panic!() };
+        report.name_extension = "X".parse().unwrap();
+        let bits = Message::AtonReport(report).to_bits().unwrap();
+        assert_eq!(bits.len(), 278);
+        let Message::AtonReport(decoded) = Message::from_bits(&bits).unwrap() else { panic!() };
+        assert_eq!(decoded.name.to_string(), "STATIONKEEPER");
+        assert_eq!(decoded.name_extension.to_string(), "X");
+    }
+
+    #[test]
+    fn from_bits_trailing_bits() {
+        // Bits after a fixed-length message are ignored.
+        let msg = Message::ScheduledPositionReport(PositionReport::new(
+            MMSI::new(123456789).unwrap(),
+            CommunicationState { sync: 0, slot_time_out: 0, sub_message: 0 },
+        ));
+        let mut bits = msg.to_bits().unwrap();
+        bits.extend([true, true]);
+        let Message::ScheduledPositionReport(decoded) = Message::from_bits(&bits).unwrap() else { panic!() };
+        assert_eq!(u32::from(decoded.source), 123456789);
     }
 
     #[test]
