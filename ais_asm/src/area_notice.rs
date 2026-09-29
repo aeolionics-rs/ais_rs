@@ -280,6 +280,13 @@ impl TryFrom<(f64, f64)> for Position {
     }
 }
 
+impl From<&Position> for (f64, f64) {
+    /// The latitude and longitude in degrees.
+    fn from(position: &Position) -> Self {
+        ((position.latitude as f64) / 60.0 / 1_000.0, (position.longitude as f64) / 60.0 / 1_000.0)
+    }
+}
+
 impl Default for Position {
     fn default() -> Self {
         Self {
@@ -302,4 +309,16 @@ pub struct Leg {
 pub struct Shape {
     pub scale: Scale,
     pub points: [Leg; 4],
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn position_degrees() {
+        let position = Position::try_from((47.61, -122.4)).unwrap();
+        let (latitude, longitude) = <(f64, f64)>::from(&position);
+        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (476100.0, -1224000.0));
+    }
 }
