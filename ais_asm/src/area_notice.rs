@@ -297,10 +297,14 @@ impl Default for Position {
     }
 }
 
+/// A leg of a polyline or polygon, from the previous point to the next.
 #[derive(Debug, DekuRead, DekuWrite)]
 pub struct Leg {
+    /// The true bearing to the next point in half degrees, 0 to 719, or 720 if the leg is not used.
     #[deku(bits = "10", endian = "big")]
     pub angle: u16,
+    /// The distance to the next point in metres, multiplied by ten to the power of the shape's
+    /// scale, or 0 if the leg is not used.
     #[deku(bits = "10", endian = "big")]
     pub distance: u16,
 }
