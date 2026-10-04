@@ -116,6 +116,12 @@ impl Message {
     /// to the last bit rather than to the end of the last byte. Any bits following a fixed-length
     /// message are ignored.
     pub fn from_bits(bits: &BitSlice<u8, Msb0>) -> Result<Self, DekuError> {
+        // Whole bytes can be decoded in place.
+        if let Some((None, bytes, None)) = bits.domain().region() {
+            let (_, message) = Message::from_bytes((bytes, 0))?;
+            return Ok(message);
+        }
+
         // Decoding reads whole bytes, so pad before the message so that it ends on a byte boundary
         // and start decoding after the padding.
         let padding = (8 - bits.len() % 8) % 8;
@@ -323,6 +329,20 @@ mod test {
         let Message::AisSatellite(report) = decode("K5DfMB9FLsM?P00d") else { panic!() };
         assert_eq!(u32::from(report.source), 357277000);
         assert_eq!(report.course_over_ground, 11);
+    }
+
+    #[test]
+    fn from_bits_unaligned() {
+        // Whole bytes that do not start on a byte boundary are decoded the same as aligned ones.
+        let msg = Message::ScheduledPositionReport(PositionReport::new(
+            MMSI::new(123456789).unwrap(),
+            CommunicationState { sync: 0, slot_time_out: 0, sub_message: 0 },
+        ));
+        let mut bits = deku::bitvec::BitVec::<u8, deku::bitvec::Msb0>::repeat(true, 3);
+        bits.extend_from_bitslice(&msg.to_bits().unwrap());
+        assert_eq!(bits[3..].len(), 168);
+        let Message::ScheduledPositionReport(decoded) = Message::from_bits(&bits[3..]).unwrap() else { panic!() };
+        assert_eq!(u32::from(decoded.source), 123456789);
     }
 
     #[test]

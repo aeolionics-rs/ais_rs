@@ -11,10 +11,11 @@ use deku::{DekuRead, DekuWrite, deku_derive};
 
 /// Indicates how many times a message has been repeated.
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, Default, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum RepeatCount {
     /// Original message (default).
+    #[default]
     Original = 0,
     /// First retransmission.
     Once = 1,
@@ -22,11 +23,6 @@ pub enum RepeatCount {
     Twice = 2,
     /// Third and final repeat; do not repeat any more.
     Final = 3,
-}
-impl Default for RepeatCount {
-    fn default() -> Self {
-        Self::Original
-    }
 }
 
 /// Maritime Mobile Service Identity.
@@ -256,7 +252,7 @@ pub enum ShipType {
 
 /// Ship's navigational status.
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, Default, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "4")]
 pub enum NavigationalStatus {
     /// Vessel is under way under power.
@@ -287,12 +283,8 @@ pub enum NavigationalStatus {
     /// Active AIS-SART, MOB-AIS or EPIRB-AIS
     ActiveSART = 14,
     /// Undefined (default), or SART under test.
+    #[default]
     Undefined = 15,
-}
-impl Default for NavigationalStatus {
-    fn default() -> Self {
-        NavigationalStatus::Undefined
-    }
 }
 
 #[repr(u8)]
@@ -386,10 +378,11 @@ pub enum PositioningDevice {
 ///
 /// Fixed AtoN are values 5 to 19, floating AtoN are values 20 to 31.
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, DekuRead, DekuWrite)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "5")]
 pub enum AtonType {
     /// Default, type of AtoN not specified.
+    #[default]
     NotSpecified = 0,
     /// Reference point.
     ReferencePoint = 1,
@@ -455,12 +448,6 @@ pub enum AtonType {
     LightVessel = 31,
 }
 
-impl Default for AtonType {
-    fn default() -> Self {
-        AtonType::NotSpecified
-    }
-}
-
 #[derive(Debug, DekuRead, DekuWrite)]
 pub struct UtcDateTime {
     #[deku(bits = 14, endian = "big")]
@@ -506,11 +493,12 @@ impl Default for UtcDateTime {
 #[derive(Debug, DekuRead, DekuWrite)]
 pub struct QuietTime(#[deku(bits = 4)] pub u32);
 
-#[derive(Debug, Clone, Copy, DekuRead, DekuWrite)]
+#[derive(Debug, Clone, Copy, Default, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "6")]
 pub enum Timestamp {
     #[deku(id_pat = "0..60")]
     Second(u8),
+    #[default]
     #[deku(id = "60")]
     Unavailable,
     #[deku(id = "61")]
@@ -525,12 +513,6 @@ impl Timestamp {
     pub fn now() -> Self {
         // SAFETY: second() returns number in range 0..59
         Self::Second(Utc::now().second() as u8)
-    }
-}
-
-impl Default for Timestamp {
-    fn default() -> Self {
-        Self::Unavailable
     }
 }
 
@@ -592,35 +574,26 @@ pub struct Altitude(#[deku(bits = 12, endian = "big")] pub u16);
 ///
 /// See M-1371 Table 48.
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, Default, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum RaimFlag {
     /// RAIM is not in use.
+    #[default]
     NotInUse = 0,
     /// RAIM is in use.
     InUse = 1,
 }
-impl Default for RaimFlag {
-    fn default() -> Self {
-        RaimFlag::NotInUse
-    }
-}
 
 /// Position accuracy based on M-1371 Table 48.
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
+#[derive(Debug, Copy, Clone, Default, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum PositionAccuracy {
     /// Accuracy > 10m (default)
+    #[default]
     Low = 0,
     /// Accuracy < 10m
     High = 1,
-}
-
-impl Default for PositionAccuracy {
-    fn default() -> Self {
-        PositionAccuracy::Low
-    }
 }
 
 /// Station position, stored at a resolution of 1/10_000 minute.
@@ -706,10 +679,11 @@ pub struct GnssArea {
 
 /// Indicates if the vessel is performing a special manoeuvre.
 #[repr(u8)]
-#[derive(Debug, DekuRead, DekuWrite)]
+#[derive(Debug, Default, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "2")]
 pub enum SpecialManoeuvre {
     /// Information is not available (default).
+    #[default]
     NotAvailable = 0,
     /// Vessel is not engaged in a special manoeuvre.
     NotEngaged = 1,
@@ -719,27 +693,16 @@ pub enum SpecialManoeuvre {
     Regional = 3,
 }
 
-impl Default for SpecialManoeuvre {
-    fn default() -> Self {
-        SpecialManoeuvre::NotAvailable
-    }
-}
-
 /// Transmitter output power.
 #[repr(u8)]
-#[derive(Debug, DekuRead, DekuWrite)]
+#[derive(Debug, Default, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = "1")]
 pub enum TransmitPower {
     /// Transmitting in high power mode (default).
+    #[default]
     High = 0,
     /// Transmitting in low power mode.
     Low = 1,
-}
-
-impl Default for TransmitPower {
-    fn default() -> Self {
-        TransmitPower::High
-    }
 }
 
 #[derive(Debug, DekuRead, DekuWrite)]
