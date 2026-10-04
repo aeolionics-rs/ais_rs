@@ -261,11 +261,23 @@ mod test {
         // A type 21 AtoN report with a 1 character name extension is 278 bits.
         let Message::AtonReport(mut report) = decode_sentence("!AIVDM,1,1,,A,E=?eK;hab0b4WW5RR`2a0000000C@OBPvT340000002P10,4*53") else { panic!() };
         report.name_extension = "X".parse().unwrap();
-        let bits = Message::AtonReport(report).to_bits().unwrap();
+        let mut bits = Message::AtonReport(report).to_bits().unwrap();
         assert_eq!(bits.len(), 278);
         let Message::AtonReport(decoded) = Message::from_bits(&bits).unwrap() else { panic!() };
         assert_eq!(decoded.name.to_string(), "STATIONKEEPER");
         assert_eq!(decoded.name_extension.to_string(), "X");
+
+        // The spare bits that pad the name extension to a byte boundary are ignored.
+        bits.extend([false, false]);
+        let Message::AtonReport(decoded) = Message::from_bits(&bits).unwrap() else { panic!() };
+        assert_eq!(decoded.name_extension.to_string(), "X");
+    }
+
+    #[test]
+    fn type27_satellite() {
+        let Message::AisSatellite(report) = decode("K5DfMB9FLsM?P00d") else { panic!() };
+        assert_eq!(u32::from(report.source), 357277000);
+        assert_eq!(report.course_over_ground, 11);
     }
 
     #[test]

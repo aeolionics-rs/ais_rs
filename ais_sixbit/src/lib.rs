@@ -4,7 +4,8 @@
 
 //! Support for 6-bit text as defined in §A7-3 Table 45.
 
-use deku::{DekuRead, DekuWrite};
+use deku::no_std_io::{Read, Seek};
+use deku::prelude::{DekuError, DekuRead, DekuReader, DekuWrite, Reader};
 use std::fmt::{Debug, Display, Write};
 use std::str::FromStr;
 
@@ -150,13 +151,30 @@ impl<const SIZE: usize> Debug for SixBitText<SIZE> {
     }
 }
 
+/// Variable-length 6-bit text that extends to the end of a message.
+///
+/// When decoding, any trailing bits too few to form a character are treated as spare bits and
+/// ignored, e.g. the bits that pad an AtoN report's name extension to a byte boundary.
 #[derive(DekuRead, DekuWrite)]
 pub struct SixBitString {
-    #[deku(read_all)]
+    #[deku(reader = "SixBitString::read_chars(deku::reader)")]
     value: Vec<SixBitAscii>,
 }
 
 impl SixBitString {
+    /// Read characters until fewer than 6 bits remain.
+    fn read_chars<R: Read + Seek>(reader: &mut Reader<R>) -> Result<Vec<SixBitAscii>, DekuError> {
+        let mut value = Vec::new();
+        while !reader.end() {
+            match SixBitAscii::from_reader_with_ctx(reader, ()) {
+                Ok(ch) => value.push(ch),
+                Err(DekuError::Incomplete(_)) => break,
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(value)
+    }
+
     pub fn len(&self) -> usize {
         self.value.len()
     }

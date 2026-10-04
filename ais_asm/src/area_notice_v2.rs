@@ -96,10 +96,11 @@ impl TryFrom<(f64, f64)> for Position {
 }
 
 impl Default for Position {
+    /// A position that is not available: latitude 91 and longitude 181 degrees.
     fn default() -> Self {
         Self {
-            latitude: 181 * 60 * 10_000,
-            longitude: 91 * 60 * 10_000,
+            latitude: 91 * 60 * 10_000,
+            longitude: 181 * 60 * 10_000,
         }
     }
 }
@@ -117,4 +118,17 @@ pub struct Leg {
 pub struct Shape {
     pub scale: Scale,
     pub points: [Leg; 4],
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use deku::{DekuContainerRead, DekuContainerWrite};
+
+    #[test]
+    fn position_default() {
+        let bits = Position::default().to_bits().unwrap();
+        let (_, position) = Position::from_bytes((bits.as_raw_slice(), 0)).unwrap();
+        assert_eq!((position.latitude, position.longitude), (91 * 60 * 10_000, 181 * 60 * 10_000));
+    }
 }

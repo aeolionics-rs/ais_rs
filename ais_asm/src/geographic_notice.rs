@@ -83,7 +83,7 @@ pub struct Position {
 impl Position {
     /// Construct from raw components.
     ///
-    /// Latitude and longitude are signed values with a resolution of 1/1_000 minute.
+    /// Latitude and longitude are signed values with a resolution of 1/10_000 minute.
     /// SAFETY: caller must ensure values are within range
     pub unsafe fn new_raw(latitude: i32, longitude: i32, precision: u8) -> Self {
         Self { latitude, longitude, precision }
@@ -114,10 +114,11 @@ impl TryFrom<(f64, f64)> for Position {
 }
 
 impl Default for Position {
+    /// A position that is not available: latitude 91 and longitude 181 degrees.
     fn default() -> Self {
         Self {
-            latitude: 181 * 60 * 1_000,
-            longitude: 91 * 60 * 1_000,
+            latitude: 91 * 60 * 10_000,
+            longitude: 181 * 60 * 10_000,
             precision: 4,
         }
     }
@@ -131,4 +132,24 @@ pub struct Shape {
     pub scale: Scale,
     pub points: [Leg; 4],
     pub link: Link,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use deku::{DekuContainerRead, DekuContainerWrite};
+
+    #[test]
+    fn position_default() {
+        let bits = Position::default().to_bits().unwrap();
+        let (_, position) = Position::from_bytes((bits.as_raw_slice(), 0)).unwrap();
+        assert_eq!((position.latitude, position.longitude), (91 * 60 * 10_000, 181 * 60 * 10_000));
+    }
+
+    #[test]
+    fn position_scale() {
+        // The same resolution, 1/10_000 minute, is used by new() and the default.
+        let position = Position::new(1.0, -1.0, 4);
+        assert_eq!((position.latitude, position.longitude), (60 * 10_000, -60 * 10_000));
+    }
 }

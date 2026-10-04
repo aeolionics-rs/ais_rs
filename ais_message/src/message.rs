@@ -441,7 +441,7 @@ pub struct AisSatellitePositionReport {
     pub position: GnssPosition,
     #[deku(bits = 6)]
     pub speed_over_ground: u8,
-    #[deku(bits = 9)]
+    #[deku(bits = 9, endian = "big")]
     pub course_over_ground: u16,
     #[deku(pad_bits_after = "1")]
     pub position_latency: PositionLatency,
