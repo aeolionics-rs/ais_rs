@@ -191,7 +191,7 @@ mod test {
         assert_eq!(u32::from(report.source), 888888111);
         assert_eq!(report.aton_type, AtonType::ReferencePoint);
         assert_eq!(report.name.to_string(), "STATIONKEEPER");
-        let (latitude, longitude) = report.position.into();
+        let (latitude, longitude): (f64, f64) = report.position.try_into().unwrap();
         assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (-50218.0, 910902.0));
         let dimension = report.overall_dimension;
         assert_eq!((dimension.a, dimension.b, dimension.c, dimension.d), (0, 0, 0, 0));
@@ -199,6 +199,20 @@ mod test {
         assert!(!report.off_position);
         assert!(report.virtual_aton);
         assert_eq!(report.name_extension.len(), 0);
+    }
+
+    #[test]
+    fn station_position_not_available() {
+        assert!(<(f64, f64)>::try_from(StationPosition::default()).is_err());
+        // SAFETY: test values only, never encoded.
+        let no_longitude = unsafe { StationPosition::new_raw(0, 181 * 60 * 10_000, PositionAccuracy::Low) };
+        assert!(<(f64, f64)>::try_from(no_longitude).is_err());
+        let no_latitude = unsafe { StationPosition::new_raw(91 * 60 * 10_000, 0, PositionAccuracy::Low) };
+        assert!(<(f64, f64)>::try_from(no_latitude).is_err());
+
+        // The limits are in range.
+        let position = StationPosition::new(-90.0, 180.0, PositionAccuracy::Low);
+        assert_eq!(<(f64, f64)>::try_from(position).unwrap(), (-90.0, 180.0));
     }
 
     #[test]
@@ -213,7 +227,7 @@ mod test {
     fn type18_position() {
         let Message::StandardClassBReport(report) = decode("B52K>;h00Fc>jpUlNV@ikwpUoP06") else { panic!() };
         assert_eq!(u32::from(report.source), 338087471);
-        let (latitude, longitude) = report.position.into();
+        let (latitude, longitude): (f64, f64) = report.position.try_into().unwrap();
         assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (406845.0, -740721.0));
         assert_eq!(report.heading.0, 511);
     }
@@ -222,7 +236,7 @@ mod test {
     fn type19_position() {
         let Message::ExtendedClassBReport(report) = decode("C5N3SRgPEnJGEBT>NhWAwwo862PaLELTBJ:V00000000S0D:R220") else { panic!() };
         assert_eq!(u32::from(report.source), 367059850);
-        let (latitude, longitude) = report.position.into();
+        let (latitude, longitude): (f64, f64) = report.position.try_into().unwrap();
         assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (295437.0, -888104.0));
         assert_eq!(report.name.to_string(), "CAPT.J.RIMES");
     }

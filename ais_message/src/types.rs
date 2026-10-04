@@ -665,9 +665,17 @@ impl TryFrom<(f64, f64)> for StationPosition {
     }
 }
 
-impl From<StationPosition> for (f64, f64) {
-    fn from(value: StationPosition) -> Self {
-        ((value.latitude as f64) / 60.0 / 10_000.0, (value.longitude as f64) / 60.0 / 10_000.0)
+impl TryFrom<StationPosition> for (f64, f64) {
+    type Error = OutOfRange;
+
+    /// The latitude and longitude in degrees.
+    ///
+    /// A position that is not available, latitude 91 or longitude 181 degrees, is out of range.
+    fn try_from(value: StationPosition) -> Result<Self, Self::Error> {
+        if value.latitude.abs() > 90 * 60 * 10_000 || value.longitude.abs() > 180 * 60 * 10_000 {
+            return Err(OutOfRange);
+        }
+        Ok(((value.latitude as f64) / 60.0 / 10_000.0, (value.longitude as f64) / 60.0 / 10_000.0))
     }
 }
 

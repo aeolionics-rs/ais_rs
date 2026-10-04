@@ -280,10 +280,17 @@ impl TryFrom<(f64, f64)> for Position {
     }
 }
 
-impl From<&Position> for (f64, f64) {
+impl TryFrom<&Position> for (f64, f64) {
+    type Error = OutOfRange;
+
     /// The latitude and longitude in degrees.
-    fn from(position: &Position) -> Self {
-        ((position.latitude as f64) / 60.0 / 1_000.0, (position.longitude as f64) / 60.0 / 1_000.0)
+    ///
+    /// A position that is not available, latitude 91 or longitude 181 degrees, is out of range.
+    fn try_from(position: &Position) -> Result<Self, Self::Error> {
+        if position.latitude.abs() > 90 * 60 * 1_000 || position.longitude.abs() > 180 * 60 * 1_000 {
+            return Err(OutOfRange);
+        }
+        Ok(((position.latitude as f64) / 60.0 / 1_000.0, (position.longitude as f64) / 60.0 / 1_000.0))
     }
 }
 
@@ -324,14 +331,25 @@ mod test {
     #[test]
     fn position_degrees() {
         let position = Position::try_from((47.61, -122.4)).unwrap();
-        let (latitude, longitude) = <(f64, f64)>::from(&position);
+        let (latitude, longitude) = <(f64, f64)>::try_from(&position).unwrap();
         assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (476100.0, -1224000.0));
+
+        // The limits are in range.
+        let position = Position::try_from((-90.0, 180.0)).unwrap();
+        assert_eq!(<(f64, f64)>::try_from(&position).unwrap(), (-90.0, 180.0));
     }
 
     #[test]
     fn position_default() {
         let bits = Position::default().to_bits().unwrap();
         let (_, position) = Position::from_bytes((bits.as_raw_slice(), 0)).unwrap();
-        assert_eq!(<(f64, f64)>::from(&position), (91.0, 181.0));
+        assert_eq!((position.latitude, position.longitude), (91 * 60 * 1_000, 181 * 60 * 1_000));
+        assert!(<(f64, f64)>::try_from(&position).is_err());
+
+        // Either coordinate being not available makes the position not available.
+        let position = Position { latitude: 0, longitude: 181 * 60 * 1_000, precision: 4 };
+        assert!(<(f64, f64)>::try_from(&position).is_err());
+        let position = Position { latitude: 91 * 60 * 1_000, longitude: 0, precision: 4 };
+        assert!(<(f64, f64)>::try_from(&position).is_err());
     }
 }
