@@ -7,7 +7,7 @@
 use deku::{DekuRead, DekuWrite};
 use ais_asm::{Addressed, Broadcast};
 use ais_sixbit::SixBitString;
-use ais_types::MonthDayHourMinute;
+use ais_types::{BinaryData, MonthDayHourMinute};
 use crate::types::{AisVersion, Altitude, AltitudeSensor, AssignedMode, AtonType, CallSign, CommunicationState, CommunicationStateType, CourseOverGround, DteReady, GnssArea, GnssPosition, Heading, ImoNumber, Manufacturer, Name, NavigationalStatus, OverallDimension, PositionAccuracy, PositionLatency, PositioningDevice, QuietTime, RaimFlag, RateOfTurn, RepeatCount, ReportingInterval, SatelliteTxControl, Sequence, ShipType, SpecialManoeuvre, SpeedOverGround, StationPosition, StationSelection, Timestamp, TransmitPower, TxRxMode, UtcDateTime, VdesCapability, MMSI};
 
 /// Message 1,2,3: a position report sent by a mobile, Class A station.
@@ -233,8 +233,7 @@ pub struct GnssBroadcast {
     pub source: MMSI,
     #[deku(pad_bits_after = "5")]
     pub position: GnssPosition,
-    #[deku(read_all)]
-    pub data: Vec<u8>, // TODO structure for DGNSS data
+    pub data: BinaryData, // TODO structure for DGNSS data
 }
 
 /// Message 18: Standard Position Report from a Class B AIS station.
@@ -413,8 +412,7 @@ pub struct SingleSlotBinary {
     pub addressed: bool,
     #[deku(bits = 1)]
     pub structured: bool,
-    #[deku(read_all)]
-    pub data: Vec<u8>,
+    pub data: BinaryData,
 }
 
 /// Message 26: An application-specific message sent in multiple slots.
@@ -426,8 +424,7 @@ pub struct MultiSlotBinary {
     pub addressed: bool,
     #[deku(bits = 1)]
     pub structured: bool,
-    #[deku(read_all)]
-    pub data: Vec<u8>, // Includes CommunicationState as a trailer ...
+    pub data: BinaryData, // Includes CommunicationState as a trailer ...
 }
 
 /// Message 27: A position report sent via satellite by stations outside base station coverage.

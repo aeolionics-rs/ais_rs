@@ -274,6 +274,37 @@ mod test {
     }
 
     #[test]
+    fn from_bits_binary_data() {
+        // A type 25 message with 12 bits of data is 52 bits.
+        let data = deku::bitvec::bitvec![u8, deku::bitvec::Msb0; 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1];
+        let msg = Message::SingleSlotBinary(message::SingleSlotBinary {
+            repeat: RepeatCount::Original,
+            source: MMSI::new(123456789).unwrap(),
+            addressed: false,
+            structured: false,
+            data: data.clone().into(),
+        });
+        let bits = msg.to_bits().unwrap();
+        assert_eq!(bits.len(), 52);
+        let Message::SingleSlotBinary(decoded) = Message::from_bits(&bits).unwrap() else { panic!() };
+        assert_eq!(decoded.data.0, data);
+
+        // A type 8 message for an unknown application with 7 bits of data is 63 bits.
+        use ais_asm::{ApplicationId, Broadcast, DAC, Function};
+        let data = &data[..7];
+        let msg = Message::BroadcastBinaryMessage(message::BroadcastApplicationMessage {
+            repeat: RepeatCount::Original,
+            source: MMSI::new(123456789).unwrap(),
+            message: Broadcast::Unknown(ApplicationId(DAC(1), Function(63)), data.to_bitvec().into()),
+        });
+        let bits = msg.to_bits().unwrap();
+        assert_eq!(bits.len(), 63);
+        let Message::BroadcastBinaryMessage(decoded) = Message::from_bits(&bits).unwrap() else { panic!() };
+        let Broadcast::Unknown(_, decoded) = decoded.message else { panic!() };
+        assert_eq!(*decoded, *data);
+    }
+
+    #[test]
     fn type27_satellite() {
         let Message::AisSatellite(report) = decode("K5DfMB9FLsM?P00d") else { panic!() };
         assert_eq!(u32::from(report.source), 357277000);

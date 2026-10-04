@@ -8,6 +8,7 @@ mod area_notice_v2;
 mod geographic_notice;
 
 use ais_sixbit::SixBitString;
+use ais_types::BinaryData;
 use area_notice::AreaNotice;
 use area_notice_v2::AreaNoticeV2;
 use deku::{DekuRead, DekuWrite};
@@ -89,7 +90,7 @@ pub enum Addressed {
     #[deku(id = "ApplicationId(DAC(200), Function(42))")]
     GeographicNotice(GeographicNotice),
     #[deku(id_pat = "_")]
-    Unknown(ApplicationId, #[deku(read_all)] Vec<u8>),
+    Unknown(ApplicationId, BinaryData),
 }
 
 #[allow(non_camel_case_types)]
@@ -119,5 +120,5 @@ pub enum Broadcast {
         // TODO add padding to make total message length an even number of bytes
     },
     #[deku(id_pat = "_")]
-    Unknown(ApplicationId, #[deku(read_all)] Vec<u8>),
+    Unknown(ApplicationId, BinaryData),
 }
