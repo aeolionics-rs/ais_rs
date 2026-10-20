@@ -39,8 +39,8 @@ pub struct Capability(#[deku(bits = "1", pad_bits_after = "1")] pub bool);
 
 #[repr(u8)]
 #[derive(Debug, DekuRead, DekuWrite)]
-#[deku(bits = 3, id_type="u8")]
-pub enum ApplicationResponse{
+#[deku(bits = 3, id_type = "u8")]
+pub enum ApplicationResponse {
     UnableToResponse = 0,
     ReceptionAcknowledged = 1,
     ResponseToFollow = 2,
@@ -77,7 +77,7 @@ pub enum Addressed {
     #[deku(id = "ApplicationId(DAC(1), Function(4))")]
     CapabilityReply { dac: DAC, functions: [Capability; 64] },
     #[deku(id = "ApplicationId(DAC(1), Function(5))")]
-    ApplicationAcknowledgement{
+    ApplicationAcknowledgement {
         requested: ApplicationId,
         #[deku(bits = 11, endian = "big")]
         sequence: u16,

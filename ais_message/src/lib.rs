@@ -9,10 +9,10 @@
 pub mod message;
 pub mod types;
 
-use std::fmt::{Binary, Formatter, Write};
 use deku::bitvec::{BitSlice, BitVec, Msb0};
 use deku::prelude::*;
 use message::*;
+use std::fmt::{Binary, Formatter, Write};
 
 /// An AIS message.
 #[non_exhaustive]
@@ -152,11 +152,7 @@ mod test {
     fn type1() {
         let msg = Message::ScheduledPositionReport(PositionReport::new(
             MMSI::new(0).unwrap(),
-            CommunicationState {
-                sync: 0b11,
-                slot_time_out: 0b111,
-                sub_message: 0x3fff,
-            },
+            CommunicationState { sync: 0b11, slot_time_out: 0b111, sub_message: 0x3fff },
         ));
         let result = msg.to_bits().unwrap();
         assert_eq!(result.len(), 168);
@@ -193,7 +189,11 @@ mod test {
 
     #[test]
     fn type21_aton() {
-        let Message::AtonReport(report) = decode_sentence("!AIVDM,1,1,,A,E=?eK;hab0b4WW5RR`2a0000000C@OBPvT340000002P10,4*53") else { panic!() };
+        let Message::AtonReport(report) =
+            decode_sentence("!AIVDM,1,1,,A,E=?eK;hab0b4WW5RR`2a0000000C@OBPvT340000002P10,4*53")
+        else {
+            panic!()
+        };
         assert_eq!(u32::from(report.source), 888888111);
         assert_eq!(report.aton_type, AtonType::ReferencePoint);
         assert_eq!(report.name.to_string(), "STATIONKEEPER");
@@ -240,7 +240,10 @@ mod test {
 
     #[test]
     fn type19_position() {
-        let Message::ExtendedClassBReport(report) = decode("C5N3SRgPEnJGEBT>NhWAwwo862PaLELTBJ:V00000000S0D:R220") else { panic!() };
+        let Message::ExtendedClassBReport(report) = decode("C5N3SRgPEnJGEBT>NhWAwwo862PaLELTBJ:V00000000S0D:R220")
+        else {
+            panic!()
+        };
         assert_eq!(u32::from(report.source), 367059850);
         let (latitude, longitude): (f64, f64) = report.position.try_into().unwrap();
         assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (295437.0, -888104.0));
@@ -256,7 +259,10 @@ mod test {
 
         let Message::StaticDataReport(report) = decode("H42O55lti4hhhilD3nink000?050") else { panic!() };
         assert_eq!(u32::from(report.source), 271041815);
-        let message::StaticDataPart::PartB { ship_type: ShipType::Passenger, call_sign, dimension, .. } = report.data else { panic!("not passenger part B") };
+        let message::StaticDataPart::PartB { ship_type: ShipType::Passenger, call_sign, dimension, .. } = report.data
+        else {
+            panic!("not passenger part B")
+        };
         assert_eq!(call_sign.to_string(), "TC6163");
         assert_eq!((dimension.a, dimension.b, dimension.c, dimension.d), (0, 15, 0, 5));
     }
@@ -279,7 +285,11 @@ mod test {
     #[test]
     fn from_bits_aton_name_extension() {
         // A type 21 AtoN report with a 1 character name extension is 278 bits.
-        let Message::AtonReport(mut report) = decode_sentence("!AIVDM,1,1,,A,E=?eK;hab0b4WW5RR`2a0000000C@OBPvT340000002P10,4*53") else { panic!() };
+        let Message::AtonReport(mut report) =
+            decode_sentence("!AIVDM,1,1,,A,E=?eK;hab0b4WW5RR`2a0000000C@OBPvT340000002P10,4*53")
+        else {
+            panic!()
+        };
         report.name_extension = "X".parse().unwrap();
         let mut bits = Message::AtonReport(report).to_bits().unwrap();
         assert_eq!(bits.len(), 278);

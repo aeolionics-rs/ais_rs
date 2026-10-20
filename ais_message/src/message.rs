@@ -4,11 +4,18 @@
 
 //! AIS message definitions.
 
-use deku::{DekuRead, DekuWrite};
+use crate::types::{
+    AisVersion, Altitude, AltitudeSensor, AssignedMode, AtonType, CallSign, CommunicationState, CommunicationStateType,
+    CourseOverGround, DteReady, GnssArea, GnssPosition, Heading, ImoNumber, MMSI, Manufacturer, Name,
+    NavigationalStatus, OverallDimension, PositionAccuracy, PositionLatency, PositioningDevice, QuietTime, RaimFlag,
+    RateOfTurn, RepeatCount, ReportingInterval, SatelliteTxControl, Sequence, ShipType, SpecialManoeuvre,
+    SpeedOverGround, StationPosition, StationSelection, Timestamp, TransmitPower, TxRxMode, UtcDateTime,
+    VdesCapability,
+};
 use ais_asm::{Addressed, Broadcast};
 use ais_sixbit::SixBitString;
 use ais_types::{BinaryData, MonthDayHourMinute};
-use crate::types::{AisVersion, Altitude, AltitudeSensor, AssignedMode, AtonType, CallSign, CommunicationState, CommunicationStateType, CourseOverGround, DteReady, GnssArea, GnssPosition, Heading, ImoNumber, Manufacturer, Name, NavigationalStatus, OverallDimension, PositionAccuracy, PositionLatency, PositioningDevice, QuietTime, RaimFlag, RateOfTurn, RepeatCount, ReportingInterval, SatelliteTxControl, Sequence, ShipType, SpecialManoeuvre, SpeedOverGround, StationPosition, StationSelection, Timestamp, TransmitPower, TxRxMode, UtcDateTime, VdesCapability, MMSI};
+use deku::{DekuRead, DekuWrite};
 
 /// Message 1,2,3: a position report sent by a mobile, Class A station.
 ///
@@ -37,7 +44,7 @@ impl PositionReport {
     /// Create a new position report with minimal information.
     /// All other fields are set to the default values defined by the specification.
     pub fn new(source: MMSI, state: CommunicationState) -> Self {
-        PositionReport{
+        PositionReport {
             repeat: Default::default(),
             source,
             status: Default::default(),

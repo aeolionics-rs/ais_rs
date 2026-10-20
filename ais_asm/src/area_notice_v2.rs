@@ -68,7 +68,7 @@ impl Position {
     /// Latitude and longitude are signed values with a resolution of 1/10_000 minute.
     /// SAFETY: caller must ensure values are within range
     pub unsafe fn new_raw(latitude: i32, longitude: i32) -> Self {
-        Self { latitude, longitude}
+        Self { latitude, longitude }
     }
 
     /// Construct a position from floating point latitude and longitude (degrees).
@@ -80,7 +80,7 @@ impl Position {
         let latitude = (latitude * 60.0 * 10_000.0) as i32;
         let longitude = (longitude * 60.0 * 10_000.0) as i32;
         // SAFETY: Bounds have been checked.
-        unsafe {Self::new_raw(latitude, longitude)}
+        unsafe { Self::new_raw(latitude, longitude) }
     }
 }
 
@@ -98,13 +98,9 @@ impl TryFrom<(f64, f64)> for Position {
 impl Default for Position {
     /// A position that is not available: latitude 91 and longitude 181 degrees.
     fn default() -> Self {
-        Self {
-            latitude: 91 * 60 * 10_000,
-            longitude: 181 * 60 * 10_000,
-        }
+        Self { latitude: 91 * 60 * 10_000, longitude: 181 * 60 * 10_000 }
     }
 }
-
 
 #[derive(Debug, DekuRead, DekuWrite)]
 pub struct Leg {

@@ -479,14 +479,7 @@ impl From<DateTime<Utc>> for UtcDateTime {
 
 impl Default for UtcDateTime {
     fn default() -> Self {
-        Self {
-            year: 0,
-            month: 0,
-            day: 0,
-            hour: 24,
-            minute: 60,
-            second: 60,
-        }
+        Self { year: 0, month: 0, day: 0, hour: 24, minute: 60, second: 60 }
     }
 }
 

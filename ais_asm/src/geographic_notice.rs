@@ -116,11 +116,7 @@ impl TryFrom<(f64, f64)> for Position {
 impl Default for Position {
     /// A position that is not available: latitude 91 and longitude 181 degrees.
     fn default() -> Self {
-        Self {
-            latitude: 91 * 60 * 10_000,
-            longitude: 181 * 60 * 10_000,
-            precision: 4,
-        }
+        Self { latitude: 91 * 60 * 10_000, longitude: 181 * 60 * 10_000, precision: 4 }
     }
 }
 
