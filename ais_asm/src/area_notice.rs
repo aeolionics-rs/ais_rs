@@ -189,7 +189,7 @@ pub struct Boundary {
 
 #[derive(Debug, DekuRead, DekuWrite)]
 pub struct SectorBoundary {
-    radius: Radius,
+    pub radius: Radius,
     #[deku(bits = "9", endian = "big")]
     pub left: u16,
     #[deku(bits = "9", endian = "big")]

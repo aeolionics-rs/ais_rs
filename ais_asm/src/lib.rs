@@ -4,8 +4,8 @@
 
 //! Application-specific messages.
 pub mod area_notice;
-mod area_notice_v2;
-mod geographic_notice;
+pub mod area_notice_v2;
+pub mod geographic_notice;
 
 use ais_sixbit::SixBitString;
 use ais_types::BinaryData;

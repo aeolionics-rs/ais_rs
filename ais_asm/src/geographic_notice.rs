@@ -113,6 +113,20 @@ impl TryFrom<(f64, f64)> for Position {
     }
 }
 
+impl TryFrom<&Position> for (f64, f64) {
+    type Error = OutOfRange;
+
+    /// The latitude and longitude in degrees.
+    ///
+    /// A position that is not available, latitude 91 or longitude 181 degrees, is out of range.
+    fn try_from(position: &Position) -> Result<Self, Self::Error> {
+        if position.latitude.abs() > 90 * 60 * 10_000 || position.longitude.abs() > 180 * 60 * 10_000 {
+            return Err(OutOfRange);
+        }
+        Ok(((position.latitude as f64) / 60.0 / 10_000.0, (position.longitude as f64) / 60.0 / 10_000.0))
+    }
+}
+
 impl Default for Position {
     /// A position that is not available: latitude 91 and longitude 181 degrees.
     fn default() -> Self {
