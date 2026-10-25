@@ -8,10 +8,15 @@ use ais_sixbit::SixBitText;
 use ais_types::{Minutes, MonthDayHourMinute, OutOfRange};
 use deku::{DekuRead, DekuWrite};
 
-/// Structure of a Geographic Notice message.
+/// Structure of the EU inland Geographic Notice message (DAC 200, FI 42; addressed in message 6,
+/// in force since 18 October 2021, <https://www.e-navigation.nl/content/geographic-notice-1>;
+/// broadcast in message 8, a proposal, <https://www.e-navigation.nl/content/geographic-notice-0>;
+/// both pages carry the layout, there is no separate document).
 ///
-/// This added version and action to the main message and added
-/// linkage for polyline and polygon sub-aras.
+/// This added a three-bit version indicator (0 today) and an action to the Area Notice, widened
+/// each sub-area to 96 bits, and added link bits to the point, polyline and polygon sub-areas
+/// saying which shape a point continues. The USCG's message of the same name differs in its
+/// version field and has no link bits: see [`uscg_geographic_notice`](super::uscg_geographic_notice).
 #[derive(Debug, DekuRead, DekuWrite)]
 pub struct GeographicNotice {
     #[deku(pad_bits_after = "3")]
@@ -34,7 +39,7 @@ pub enum Action {
     Directive = 1,
 }
 
-/// SubArea definition, version 2.
+/// SubArea definition of the EU Geographic Notice, Tables 3 to 8 of its page.
 ///
 /// This version requires 96 bits.
 #[derive(Debug, DekuRead, DekuWrite)]
@@ -134,6 +139,9 @@ impl Default for Position {
     }
 }
 
+/// What a point, polyline or polygon sub-area continues: 0 a single point, polyline or polygon, or
+/// the end point of one (the default); 1 the start or a further point of a polyline; 2 the start
+/// or a further point of a polygon; 3 unused.
 #[derive(Debug, DekuRead, DekuWrite)]
 pub struct Link(#[deku(bits = "2")] pub u8);
 

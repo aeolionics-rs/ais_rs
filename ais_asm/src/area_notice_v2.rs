@@ -8,7 +8,10 @@ use ais_sixbit::SixBitText;
 use ais_types::{Minutes, MonthDayHourMinute, OutOfRange};
 use deku::{DekuRead, DekuWrite};
 
-/// Structure of an Area Notice message, version 2.
+/// Structure of an Area Notice message, version 2: the USCG's Area Notice (DAC 366, FI 22),
+/// version 2.3, deprecated in favour of the Geographic Notice:
+/// <https://www.e-navigation.nl/content/area-notice-1>, specification
+/// <https://www.e-navigation.nl/sites/default/files/asm_files/AN%20Version%2023.pdf>.
 ///
 /// This modified SubArea position to increase precision
 /// but removed the indicator from Rectangle and Sector.

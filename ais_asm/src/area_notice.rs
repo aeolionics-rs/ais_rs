@@ -196,7 +196,9 @@ pub struct SectorBoundary {
     pub right: u16,
 }
 
-/// Structure of an Area Notice message.
+/// Structure of an Area Notice message, IMO SN.1/Circ.289 (DAC 1, FI 22 broadcast, FI 23
+/// addressed): <https://www.e-navigation.nl/content/area-notice-0> and
+/// <https://www.e-navigation.nl/content/area-notice>, which carry the layout.
 #[derive(Debug, DekuRead, DekuWrite)]
 pub struct AreaNotice {
     pub linkage: Linkage,
