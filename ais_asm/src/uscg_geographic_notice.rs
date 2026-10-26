@@ -44,7 +44,7 @@ pub enum Action {
     Directive = 1,
 }
 
-/// SubArea definition of the USCG Geographic Notice, Tables 5 to 10 of its specification.
+/// `SubArea` definition of the USCG Geographic Notice, Tables 5 to 10 of its specification.
 ///
 /// Each sub-area is 96 bits.
 #[derive(Debug, DekuRead, DekuWrite)]
@@ -130,19 +130,27 @@ pub struct Position {
 impl Position {
     /// Construct from raw components.
     ///
-    /// Latitude and longitude are signed values with a resolution of 1/10_000 minute; the
+    /// Latitude and longitude are signed values with a resolution of `1/10_000` minute; the
     /// precision is the number of decimal places meant, 0 to 4.
-    /// SAFETY: caller must ensure values are within range
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the values are within range.
+    #[must_use]
     pub unsafe fn new_raw(latitude: i32, longitude: i32, precision: u8) -> Self {
-        Self { latitude, longitude, precision }
+        Self { longitude, latitude, precision }
     }
 
     /// Construct a position from latitude and longitude (degrees).
     ///
-    /// Function asserts values are in range.
+    /// # Panics
+    ///
+    /// If the latitude or longitude is out of range.
+    #[must_use]
+    #[expect(clippy::cast_possible_truncation, reason = "in range, the units fit an i32")]
     pub fn new(latitude: f64, longitude: f64, precision: u8) -> Self {
-        assert!(latitude >= -90.0 && latitude <= 90.0);
-        assert!(longitude >= -180.0 && longitude <= 180.0);
+        assert!((-90.0..=90.0).contains(&latitude));
+        assert!((-180.0..=180.0).contains(&longitude));
         let latitude = (latitude * 60.0 * 10_000.0) as i32;
         let longitude = (longitude * 60.0 * 10_000.0) as i32;
         // SAFETY: Bounds have been checked.
@@ -171,7 +179,7 @@ impl TryFrom<&Position> for (f64, f64) {
         if position.latitude.abs() > 90 * 60 * 10_000 || position.longitude.abs() > 180 * 60 * 10_000 {
             return Err(OutOfRange);
         }
-        Ok(((position.latitude as f64) / 60.0 / 10_000.0, (position.longitude as f64) / 60.0 / 10_000.0))
+        Ok((f64::from(position.latitude) / 60.0 / 10_000.0, f64::from(position.longitude) / 60.0 / 10_000.0))
     }
 }
 
@@ -279,6 +287,7 @@ impl Display for Scale {
 
 impl Scale {
     /// Metres for so many of the scale's units.
+    #[must_use]
     pub fn metres(&self, units: u32) -> u32 {
         units * 10u32.pow(u32::from(self.0))
     }

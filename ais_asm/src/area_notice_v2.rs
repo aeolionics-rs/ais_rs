@@ -14,7 +14,7 @@ use deku::{DekuRead, DekuWrite};
 /// <https://www.e-navigation.nl/content/area-notice-1>, specification
 /// <https://www.e-navigation.nl/sites/default/files/asm_files/AN%20Version%2023.pdf>.
 ///
-/// This modified SubArea position to increase precision
+/// This modified `SubArea` position to increase precision
 /// but removed the indicator from Rectangle and Sector.
 #[derive(Debug, DekuRead, DekuWrite)]
 pub struct AreaNoticeV2 {
@@ -26,7 +26,7 @@ pub struct AreaNoticeV2 {
     pub subareas: Vec<SubArea>,
 }
 
-/// SubArea definition, version 2.
+/// `SubArea` definition, version 2.
 ///
 /// This version requires 90 bits.
 #[derive(Debug, DekuRead, DekuWrite)]
@@ -69,18 +69,26 @@ pub struct Position {
 impl Position {
     /// Construct from raw components.
     ///
-    /// Latitude and longitude are signed values with a resolution of 1/10_000 minute.
-    /// SAFETY: caller must ensure values are within range
+    /// Latitude and longitude are signed values with a resolution of `1/10_000` minute.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the values are within range.
+    #[must_use]
     pub unsafe fn new_raw(latitude: i32, longitude: i32) -> Self {
-        Self { latitude, longitude }
+        Self { longitude, latitude }
     }
 
     /// Construct a position from floating point latitude and longitude (degrees).
     ///
-    /// Function asserts values are in range.
+    /// # Panics
+    ///
+    /// If the latitude or longitude is out of range.
+    #[must_use]
+    #[expect(clippy::cast_possible_truncation, reason = "in range, the units fit an i32")]
     pub fn new(latitude: f64, longitude: f64) -> Self {
-        assert!(latitude >= -90.0 && latitude <= 90.0);
-        assert!(longitude >= -180.0 && longitude <= 180.0);
+        assert!((-90.0..=90.0).contains(&latitude));
+        assert!((-180.0..=180.0).contains(&longitude));
         let latitude = (latitude * 60.0 * 10_000.0) as i32;
         let longitude = (longitude * 60.0 * 10_000.0) as i32;
         // SAFETY: Bounds have been checked.
@@ -109,7 +117,7 @@ impl TryFrom<&Position> for (f64, f64) {
         if position.latitude.abs() > 90 * 60 * 10_000 || position.longitude.abs() > 180 * 60 * 10_000 {
             return Err(OutOfRange);
         }
-        Ok(((position.latitude as f64) / 60.0 / 10_000.0, (position.longitude as f64) / 60.0 / 10_000.0))
+        Ok((f64::from(position.latitude) / 60.0 / 10_000.0, f64::from(position.longitude) / 60.0 / 10_000.0))
     }
 }
 

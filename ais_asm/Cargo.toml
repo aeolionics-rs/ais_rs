@@ -13,3 +13,6 @@ description = "AIS Application Specific Messages"
 ais_types = { workspace = true }
 ais_sixbit = { workspace = true }
 deku = { workspace = true }
+
+[lints]
+workspace = true

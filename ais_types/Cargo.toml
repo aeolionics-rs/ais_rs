@@ -12,3 +12,6 @@ description = "Common AIS types"
 [dependencies]
 deku = { workspace = true }
 chrono = { workspace = true }
+
+[lints]
+workspace = true

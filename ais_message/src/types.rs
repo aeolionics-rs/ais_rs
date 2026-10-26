@@ -35,7 +35,9 @@ pub struct MMSI(#[deku(bits = "30", endian = "big")] u32);
 impl MMSI {
     /// Create a new MMS identifier.
     ///
-    /// Returns `OutOfRange` if the value is not a valid MMSI.
+    /// # Errors
+    ///
+    /// `OutOfRange` if the value is not a valid MMSI, more than nine digits.
     pub fn new(mmsi: u32) -> Result<Self, OutOfRange> {
         match mmsi {
             ..=999_999_999 => Ok(MMSI(mmsi)),
@@ -487,6 +489,12 @@ pub struct UtcDateTime {
 }
 
 impl From<DateTime<Utc>> for UtcDateTime {
+    /// A year outside the fourteen bits AIS gives it, before the common era say, wraps.
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "chrono's month, day, hour, minute and second are small; the year as documented"
+    )]
     fn from(value: DateTime<Utc>) -> Self {
         Self {
             year: value.year() as u16,
@@ -525,8 +533,9 @@ pub enum Timestamp {
 }
 
 impl Timestamp {
+    #[must_use]
+    #[expect(clippy::cast_possible_truncation, reason = "a second is 0 to 59")]
     pub fn now() -> Self {
-        // SAFETY: second() returns number in range 0..59
         Self::Second(Utc::now().second() as u8)
     }
 }
@@ -611,7 +620,7 @@ pub enum PositionAccuracy {
     High = 1,
 }
 
-/// Station position, stored at a resolution of 1/10_000 minute.
+/// Station position, stored at a resolution of `1/10_000` minute.
 #[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
 pub struct StationPosition {
     pub accuracy: PositionAccuracy,
@@ -623,18 +632,26 @@ pub struct StationPosition {
 impl StationPosition {
     /// Construct from raw components.
     ///
-    /// Latitude and longitude are signed values with a resolution of 1/10_000 minute.
-    /// SAFETY: caller must ensure values are within range
+    /// Latitude and longitude are signed values with a resolution of `1/10_000` minute.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the values are within range.
+    #[must_use]
     pub unsafe fn new_raw(latitude: i32, longitude: i32, accuracy: PositionAccuracy) -> Self {
-        Self { latitude, longitude, accuracy }
+        Self { accuracy, longitude, latitude }
     }
 
     /// Construct a position from latitude and longitude (degrees).
     ///
-    /// Function asserts values are in range.
+    /// # Panics
+    ///
+    /// If the latitude or longitude is out of range.
+    #[must_use]
+    #[expect(clippy::cast_possible_truncation, reason = "in range, the units fit an i32")]
     pub fn new(latitude: f64, longitude: f64, accuracy: PositionAccuracy) -> Self {
-        assert!(latitude >= -90.0 && latitude <= 90.0);
-        assert!(longitude >= -180.0 && longitude <= 180.0);
+        assert!((-90.0..=90.0).contains(&latitude));
+        assert!((-180.0..=180.0).contains(&longitude));
         let latitude = (latitude * 60.0 * 10_000.0) as i32;
         let longitude = (longitude * 60.0 * 10_000.0) as i32;
         // SAFETY: Bounds have been checked.
@@ -649,7 +666,7 @@ impl TryFrom<(f64, f64)> for StationPosition {
         if latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0 {
             return Err(OutOfRange);
         }
-        Ok(Self::new(latitude, longitude, Default::default()))
+        Ok(Self::new(latitude, longitude, PositionAccuracy::default()))
     }
 }
 
@@ -663,7 +680,7 @@ impl TryFrom<StationPosition> for (f64, f64) {
         if value.latitude.abs() > 90 * 60 * 10_000 || value.longitude.abs() > 180 * 60 * 10_000 {
             return Err(OutOfRange);
         }
-        Ok(((value.latitude as f64) / 60.0 / 10_000.0, (value.longitude as f64) / 60.0 / 10_000.0))
+        Ok((f64::from(value.latitude) / 60.0 / 10_000.0, f64::from(value.longitude) / 60.0 / 10_000.0))
     }
 }
 
@@ -671,8 +688,8 @@ impl Default for StationPosition {
     fn default() -> Self {
         Self {
             accuracy: PositionAccuracy::default(),
-            longitude: 0x6791AC0, // Constant from spec = 181 * 60 * 10_000
-            latitude: 0x3412140,  // Constant from spec = 91 * 60 * 10_000
+            longitude: 0x0679_1AC0, // Constant from spec = 181 * 60 * 10_000
+            latitude: 0x0341_2140,  // Constant from spec = 91 * 60 * 10_000
         }
     }
 }
@@ -849,8 +866,20 @@ impl Display for ImoNumber {
 
 impl Display for ShipType {
     /// What the ship is, and for a hazardous cargo its category, `tanker, category X`.
+    #[expect(clippy::too_many_lines, reason = "a code table, one arm a code")]
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        use ShipType::*;
+        use ShipType::{
+            BulkCarrier, BuoyTender, CableLayer, Cargo, Cargo_OS, Cargo_Other, Cargo_X, Cargo_Y, Cargo_Z, Construction,
+            ContainerShip, CrewBoat, CruiseShip, Diving, Dredger, Excursion, FPSO, Ferry, FishFactory, FishFarmSupport,
+            Fishing, Government, HighSpeed, HighSpeed_OS, HighSpeed_Other, HighSpeed_Passenger, HighSpeed_RoRo,
+            HighSpeed_X, HighSpeed_Y, HighSpeed_Z, IceBreaker, LandingCraft, LawEnforcement, LongTow, Medical,
+            NotAtWar, NotAvailable, OffshoreSupport, Other, Other_NoMoreInformation, Other_OS, Other_X, Other_Y,
+            Other_Z, Passenger, Passenger_OS, Passenger_Other, Passenger_X, Passenger_Y, Passenger_Z, Patrol, Pilot,
+            PipeLayer, Pleasure, Research, Responder, RoRoCarrier, Sailing, SearchRescue, SpecialPurpose,
+            SupportVessel, Tanker, Tanker_NonHazardous, Tanker_OS, Tanker_Other, Tanker_X, Tanker_Y, Tanker_Z, Tender,
+            Towing, Training, Trawler, Tug, TugAndTank, Unknown, Warship, Wig_OS, Wig_Other, Wig_X, Wig_Y, Wig_Z,
+            WingInGround,
+        };
         let (kind, category) = match self {
             NotAvailable => ("type n/a", None),
             Research => ("research", None),
@@ -945,7 +974,10 @@ impl Display for ShipType {
 
 impl Display for NavigationalStatus {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        use NavigationalStatus::*;
+        use NavigationalStatus::{
+            ActiveSART, Aground, AtAnchor, ConstrainedByDraught, Fishing, Moored, NotUnderCommand, Pushing, Reserved9,
+            Reserved10, Reserved13, RestrictedManoeuvrability, Sailing, TowingAstern, Undefined, UnderWay,
+        };
         f.write_str(match self {
             UnderWay => "under way using engine",
             AtAnchor => "at anchor",
@@ -1034,7 +1066,10 @@ impl Display for OverallDimension {
 
 impl Display for PositioningDevice {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        use PositioningDevice::*;
+        use PositioningDevice::{
+            BDS, Chayka, GLONASS, GNSS, GPS, Galileo, INS, Inertial, InternalGNSS, Loran, Manual, NotAvailable, PNT,
+            Reserved10, Reserved11, Terrestrial,
+        };
         f.write_str(match self {
             NotAvailable => "device n/a",
             GPS => "GPS",
@@ -1058,7 +1093,14 @@ impl Display for PositioningDevice {
 
 impl Display for AtonType {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        use AtonType::*;
+        use AtonType::{
+            BeaconCardinalEast, BeaconCardinalNorth, BeaconCardinalSouth, BeaconCardinalWest, BeaconIsolatedDanger,
+            BeaconPortHand, BeaconPreferredChannelPortHand, BeaconPreferredChannelStarboardHand, BeaconSafeWater,
+            BeaconSpecialMark, BeaconStarboardHand, CardinalEast, CardinalNorth, CardinalSouth, CardinalWest,
+            EmergencyWreckMarkingBuoy, FixedStructure, IsolatedDanger, LeadingLightFront, LeadingLightRear, Light,
+            LightVessel, NotSpecified, PortHand, PreferredChannelPortHand, PreferredChannelStarboardHand, Racon,
+            ReferencePoint, SafeWater, SectorLight, SpecialMark, StarboardHand,
+        };
         f.write_str(match self {
             NotSpecified => "AtoN type n/a",
             ReferencePoint => "reference point",
@@ -1219,6 +1261,7 @@ impl Display for StationPosition {
 impl GnssPosition {
     /// The latitude and longitude in degrees, from tenths of a minute; `None` when not available,
     /// latitude 91 or longitude 181 degrees.
+    #[must_use]
     pub fn degrees(&self) -> Option<(f64, f64)> {
         if self.latitude.abs() > 90 * 600 || self.longitude.abs() > 180 * 600 {
             return None;

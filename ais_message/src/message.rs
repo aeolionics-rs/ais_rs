@@ -44,20 +44,21 @@ pub struct PositionReport {
 impl PositionReport {
     /// Create a new position report with minimal information.
     /// All other fields are set to the default values defined by the specification.
+    #[must_use]
     pub fn new(source: MMSI, state: CommunicationState) -> Self {
         PositionReport {
-            repeat: Default::default(),
+            repeat: RepeatCount::default(),
             source,
-            status: Default::default(),
-            rate_of_turn: Default::default(),
-            speed_over_ground: Default::default(),
-            position: Default::default(),
-            course_over_ground: Default::default(),
-            heading: Default::default(),
-            timestamp: Default::default(),
-            manoeuvre: Default::default(),
-            transmit_power: Default::default(),
-            raim: Default::default(),
+            status: NavigationalStatus::default(),
+            rate_of_turn: RateOfTurn::default(),
+            speed_over_ground: SpeedOverGround::default(),
+            position: StationPosition::default(),
+            course_over_ground: CourseOverGround::default(),
+            heading: Heading::default(),
+            timestamp: Timestamp::default(),
+            manoeuvre: SpecialManoeuvre::default(),
+            transmit_power: TransmitPower::default(),
+            raim: RaimFlag::default(),
             state,
         }
     }

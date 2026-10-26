@@ -187,7 +187,7 @@ pub struct AreaNotice {
     pub subareas: Vec<SubArea>,
 }
 
-/// Original SubArea definition.
+/// Original `SubArea` definition.
 ///
 /// This version requires 87 bits.
 #[derive(Debug, DekuRead, DekuWrite)]
@@ -230,18 +230,26 @@ pub struct Position {
 impl Position {
     /// Construct from raw components.
     ///
-    /// Latitude and longitude are signed values with a resolution of 1/1_000 minute.
-    /// SAFETY: caller must ensure values are within range
+    /// Latitude and longitude are signed values with a resolution of `1/1_000` minute.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the values are within range.
+    #[must_use]
     pub unsafe fn new_raw(latitude: i32, longitude: i32, precision: u8) -> Self {
-        Self { latitude, longitude, precision }
+        Self { longitude, latitude, precision }
     }
 
     /// Construct a position from latitude and longitude (degrees).
     ///
-    /// Function asserts values are in range.
+    /// # Panics
+    ///
+    /// If the latitude or longitude is out of range.
+    #[must_use]
+    #[expect(clippy::cast_possible_truncation, reason = "in range, the units fit an i32")]
     pub fn new(latitude: f64, longitude: f64, precision: u8) -> Self {
-        assert!(latitude >= -90.0 && latitude <= 90.0);
-        assert!(longitude >= -180.0 && longitude <= 180.0);
+        assert!((-90.0..=90.0).contains(&latitude));
+        assert!((-180.0..=180.0).contains(&longitude));
         let latitude = (latitude * 60.0 * 1_000.0) as i32;
         let longitude = (longitude * 60.0 * 1_000.0) as i32;
         // SAFETY: Bounds have been checked.
@@ -270,7 +278,7 @@ impl TryFrom<&Position> for (f64, f64) {
         if position.latitude.abs() > 90 * 60 * 1_000 || position.longitude.abs() > 180 * 60 * 1_000 {
             return Err(OutOfRange);
         }
-        Ok(((position.latitude as f64) / 60.0 / 1_000.0, (position.longitude as f64) / 60.0 / 1_000.0))
+        Ok((f64::from(position.latitude) / 60.0 / 1_000.0, f64::from(position.longitude) / 60.0 / 1_000.0))
     }
 }
 
@@ -300,8 +308,29 @@ pub struct Shape {
 }
 
 impl Display for Description {
+    #[expect(clippy::too_many_lines, reason = "a code table, one arm a code")]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use Description::*;
+        use Description::{
+            AbandoningShip, ActiveMilitaryOPAREA, AlternativeRoute, AnchorageClosed, AnchorageOpen,
+            AnchoringProhibited, AwaitInstructionsBeforeProceeding, BridgeClosed, BridgeFullyOpen, BridgePartiallyOpen,
+            Cancellation, ChannelObstruction, ClearanceGranted, ClusterOfFishingVessels, ContactPortAdministration,
+            ContactVTS, DeepDraftAnchorage, Derelicts, DiversDown, DoNotProceed, DredgingOperations, DriftingMines,
+            EntryApprovalRequired, EntryProhibited, FairwayClosed, FiringDanger, FishingProhibited, HarborClosed,
+            HazardousSeaIce, HazardousSubstance, HeavyIcing, HighWaves, HighWind, IcebreakerWaitingArea, IntendedRoute,
+            LocationOfResponseUnits, MammalsInArea_ReduceSpeed, MammalsInArea_ReportSightings, MammalsInArea_StayClear,
+            MarineEvent, MarineMammalHabitat, MiscellaneousInformation, NetsInWater, NoAnchoring, Other,
+            PersonOverboard, PilotBoardingPosition, PlaceOfRefuge, PollutionResponseArea, PositionOfIcebreakers,
+            ProceedAndAwaitInstructions, ProtectedHabitat_NoFishing, ProtectedHabitat_ReduceSpeed,
+            ProtectedHabitat_StayClear, RecommendedRoute, RecommendedRouteThroughIce, ReducedClearance, ReportingIcing,
+            RestrictedVisibility, Risk, RogueOrSuspiciousVessel, SarArea, SeaplaneOperations, SecurityAlertLevel1,
+            SecurityAlertLevel2, SecurityAlertLevel3, SemiSubmergedObject, ShallowDraftAnchorage, ShoalArea,
+            ShoalAreaDueEast, ShoalAreaDueNorth, ShoalAreaDueSouth, ShoalAreaDueWest, StormFront, StormWarning,
+            StrongCurrents, SubmergedObject, SunkenVessel, SurveyOperations, SwimArea, TrafficCongestion, Undefined,
+            UnderwaterOperations, UnderwaterVehicleOperation, VesselCollision, VesselDisabledAndAdrift, VesselFire,
+            VesselFlooding, VesselGrounding, VesselListing, VesselRequestingAssistance,
+            VesselRequestingMedicalAssistance, VesselSinking, VesselTransferOperations, VesselUnderAssault,
+            VtsActiveTarget,
+        };
         f.write_str(match self {
             MarineMammalHabitat => "marine mammal habitat",
             MammalsInArea_ReduceSpeed => "mammals in area, reduce speed",
@@ -412,6 +441,7 @@ impl Display for Scale {
 
 impl Scale {
     /// Metres for so many of the scale's units.
+    #[must_use]
     pub fn metres(&self, units: u32) -> u32 {
         units * 10u32.pow(u32::from(self.0))
     }
@@ -529,7 +559,7 @@ mod test {
     fn position_degrees() {
         let position = Position::try_from((47.61, -122.4)).unwrap();
         let (latitude, longitude) = <(f64, f64)>::try_from(&position).unwrap();
-        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (476100.0, -1224000.0));
+        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (476_100.0, -1_224_000.0));
 
         // The limits are in range.
         let position = Position::try_from((-90.0, 180.0)).unwrap();

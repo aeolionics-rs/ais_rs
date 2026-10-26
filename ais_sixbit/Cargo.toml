@@ -11,3 +11,6 @@ description = "AIS six-bit ASCII Text"
 
 [dependencies]
 deku = { workspace = true}
+
+[lints]
+workspace = true

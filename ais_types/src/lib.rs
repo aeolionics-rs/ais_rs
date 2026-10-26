@@ -23,6 +23,7 @@ pub struct MonthDayHourMinute {
 }
 
 impl From<DateTime<Utc>> for MonthDayHourMinute {
+    #[expect(clippy::cast_possible_truncation, reason = "chrono's month, day, hour, minute and second are small")]
     fn from(value: DateTime<Utc>) -> Self {
         Self {
             month: value.month() as u8,
@@ -93,9 +94,9 @@ impl Error for OutOfRange {}
 #[derive(Clone, Default, PartialEq, Eq)]
 pub struct BinaryData(pub BitVec<u8, Msb0>);
 
-impl<'a> DekuReader<'a, ()> for BinaryData {
+impl DekuReader<'_, ()> for BinaryData {
     /// Read all the remaining bits.
-    fn from_reader_with_ctx<R: Read + Seek>(reader: &mut Reader<R>, _: ()) -> Result<Self, DekuError> {
+    fn from_reader_with_ctx<R: Read + Seek>(reader: &mut Reader<R>, (): ()) -> Result<Self, DekuError> {
         let mut bits = BitVec::new();
         // Reading past the end loses any buffered bits, so only read the bits that end() buffers.
         while !reader.end() {
@@ -109,7 +110,7 @@ impl<'a> DekuReader<'a, ()> for BinaryData {
 }
 
 impl DekuWriter<()> for BinaryData {
-    fn to_writer<W: Write + Seek>(&self, writer: &mut Writer<W>, _: ()) -> Result<(), DekuError> {
+    fn to_writer<W: Write + Seek>(&self, writer: &mut Writer<W>, (): ()) -> Result<(), DekuError> {
         writer.write_bits(&self.0)
     }
 }

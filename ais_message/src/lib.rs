@@ -11,7 +11,13 @@ pub mod types;
 
 use deku::bitvec::{BitSlice, BitVec, Msb0};
 use deku::prelude::*;
-use message::*;
+use message::{
+    Acknowledgement, AddressedApplicationMessage, AddressedSafetyMessage, AircraftPositionReport,
+    AisSatellitePositionReport, AssignedModeCommand, AtonReport, BaseStationReport, BroadcastApplicationMessage,
+    BroadcastSafetyMessage, ChannelManagement, DataLinkManagement, ExtendedClassBReport, GnssBroadcast,
+    GroupAssignment, Interrogation, MultiSlotBinary, PositionReport, ShipStaticData, SingleSlotAtonReport,
+    SingleSlotBinary, StandardClassBReport, StaticData, UtcInquiry, UtcResponse,
+};
 use std::fmt::{Binary, Display, Formatter, Write};
 
 /// An AIS message.
@@ -115,6 +121,10 @@ impl Message {
     /// a variable-length field at the end of the message, such as text or binary data, is read up
     /// to the last bit rather than to the end of the last byte. Any bits following a fixed-length
     /// message are ignored.
+    ///
+    /// # Errors
+    ///
+    /// What Deku says when the bits aren't a message: too few, or a field it can't read.
     pub fn from_bits(bits: &BitSlice<u8, Msb0>) -> Result<Self, DekuError> {
         // Whole bytes can be decoded in place.
         if let Some((None, bytes, None)) = bits.domain().region() {
@@ -182,6 +192,7 @@ impl Binary for Message {
 #[cfg(test)]
 mod test {
     use super::*;
+    use message::{AcknowledgmentDestination, InterrogationDestination};
     use types::*;
 
     #[test]
@@ -230,11 +241,11 @@ mod test {
         else {
             panic!()
         };
-        assert_eq!(u32::from(report.source), 888888111);
+        assert_eq!(u32::from(report.source), 888_888_111);
         assert_eq!(report.aton_type, AtonType::ReferencePoint);
         assert_eq!(report.name.to_string(), "STATIONKEEPER");
         let (latitude, longitude): (f64, f64) = report.position.try_into().unwrap();
-        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (-50218.0, 910902.0));
+        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (-50218.0, 910_902.0));
         let dimension = report.overall_dimension;
         assert_eq!((dimension.a, dimension.b, dimension.c, dimension.d), (0, 0, 0, 0));
         assert!(matches!(report.timestamp, Timestamp::Second(5)));
@@ -268,9 +279,9 @@ mod test {
     #[test]
     fn type18_position() {
         let Message::StandardClassBReport(report) = decode("B52K>;h00Fc>jpUlNV@ikwpUoP06") else { panic!() };
-        assert_eq!(u32::from(report.source), 338087471);
+        assert_eq!(u32::from(report.source), 338_087_471);
         let (latitude, longitude): (f64, f64) = report.position.try_into().unwrap();
-        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (406845.0, -740721.0));
+        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (406_845.0, -740_721.0));
         assert_eq!(report.heading.0, 511);
     }
 
@@ -280,21 +291,21 @@ mod test {
         else {
             panic!()
         };
-        assert_eq!(u32::from(report.source), 367059850);
+        assert_eq!(u32::from(report.source), 367_059_850);
         let (latitude, longitude): (f64, f64) = report.position.try_into().unwrap();
-        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (295437.0, -888104.0));
+        assert_eq!(((latitude * 1e4).round(), (longitude * 1e4).round()), (295_437.0, -888_104.0));
         assert_eq!(report.name.to_string(), "CAPT.J.RIMES");
     }
 
     #[test]
     fn type24_parts() {
         let Message::StaticDataReport(report) = decode("H42O55i18tMET00000000000000") else { panic!() };
-        assert_eq!(u32::from(report.source), 271041815);
+        assert_eq!(u32::from(report.source), 271_041_815);
         let message::StaticDataPart::PartA(name) = report.data else { panic!("not part A") };
         assert_eq!(name.to_string(), "PROGUY");
 
         let Message::StaticDataReport(report) = decode("H42O55lti4hhhilD3nink000?050") else { panic!() };
-        assert_eq!(u32::from(report.source), 271041815);
+        assert_eq!(u32::from(report.source), 271_041_815);
         let message::StaticDataPart::PartB { ship_type: ShipType::Passenger, call_sign, dimension, .. } = report.data
         else {
             panic!("not passenger part B")
@@ -308,13 +319,13 @@ mod test {
         // 70 bits, so the text would be followed by 2 bits of padding if decoded from bytes.
         let msg = Message::BroadcastSafetyMessage(BroadcastSafetyMessage {
             repeat: RepeatCount::Original,
-            source: MMSI::new(366999999).unwrap(),
+            source: MMSI::new(366_999_999).unwrap(),
             text: "HELLO".parse().unwrap(),
         });
         let bits = msg.to_bits().unwrap();
         assert_eq!(bits.len(), 70);
         let Message::BroadcastSafetyMessage(decoded) = Message::from_bits(&bits).unwrap() else { panic!() };
-        assert_eq!(u32::from(decoded.source), 366999999);
+        assert_eq!(u32::from(decoded.source), 366_999_999);
         assert_eq!(decoded.text.to_string(), "HELLO");
     }
 
@@ -341,11 +352,12 @@ mod test {
 
     #[test]
     fn from_bits_binary_data() {
+        use ais_asm::{ApplicationId, Broadcast, DAC, Function};
         // A type 25 message with 12 bits of data is 52 bits.
         let data = deku::bitvec::bitvec![u8, deku::bitvec::Msb0; 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1];
         let msg = Message::SingleSlotBinary(message::SingleSlotBinary {
             repeat: RepeatCount::Original,
-            source: MMSI::new(123456789).unwrap(),
+            source: MMSI::new(123_456_789).unwrap(),
             addressed: false,
             structured: false,
             data: data.clone().into(),
@@ -356,11 +368,10 @@ mod test {
         assert_eq!(decoded.data.0, data);
 
         // A type 8 message for an unknown application with 7 bits of data is 63 bits.
-        use ais_asm::{ApplicationId, Broadcast, DAC, Function};
         let data = &data[..7];
         let msg = Message::BroadcastBinaryMessage(message::BroadcastApplicationMessage {
             repeat: RepeatCount::Original,
-            source: MMSI::new(123456789).unwrap(),
+            source: MMSI::new(123_456_789).unwrap(),
             message: Broadcast::Unknown(ApplicationId(DAC(1), Function(63)), data.to_bitvec().into()),
         });
         let bits = msg.to_bits().unwrap();
@@ -373,7 +384,7 @@ mod test {
     #[test]
     fn type27_satellite() {
         let Message::AisSatellite(report) = decode("K5DfMB9FLsM?P00d") else { panic!() };
-        assert_eq!(u32::from(report.source), 357277000);
+        assert_eq!(u32::from(report.source), 357_277_000);
         assert_eq!(report.course_over_ground, 11);
     }
 
@@ -381,27 +392,27 @@ mod test {
     fn from_bits_unaligned() {
         // Whole bytes that do not start on a byte boundary are decoded the same as aligned ones.
         let msg = Message::ScheduledPositionReport(PositionReport::new(
-            MMSI::new(123456789).unwrap(),
+            MMSI::new(123_456_789).unwrap(),
             CommunicationState { sync: 0, slot_time_out: 0, sub_message: 0 },
         ));
         let mut bits = deku::bitvec::BitVec::<u8, deku::bitvec::Msb0>::repeat(true, 3);
         bits.extend_from_bitslice(&msg.to_bits().unwrap());
         assert_eq!(bits[3..].len(), 168);
         let Message::ScheduledPositionReport(decoded) = Message::from_bits(&bits[3..]).unwrap() else { panic!() };
-        assert_eq!(u32::from(decoded.source), 123456789);
+        assert_eq!(u32::from(decoded.source), 123_456_789);
     }
 
     #[test]
     fn from_bits_trailing_bits() {
         // Bits after a fixed-length message are ignored.
         let msg = Message::ScheduledPositionReport(PositionReport::new(
-            MMSI::new(123456789).unwrap(),
+            MMSI::new(123_456_789).unwrap(),
             CommunicationState { sync: 0, slot_time_out: 0, sub_message: 0 },
         ));
         let mut bits = msg.to_bits().unwrap();
         bits.extend([true, true]);
         let Message::ScheduledPositionReport(decoded) = Message::from_bits(&bits).unwrap() else { panic!() };
-        assert_eq!(u32::from(decoded.source), 123456789);
+        assert_eq!(u32::from(decoded.source), 123_456_789);
     }
 
     /// Each message on one line: who sent it, then what matters of what it says.
@@ -448,8 +459,13 @@ mod test {
             shown("91b55wi;hbOS@OdQAC062Ch2089h", 0),
             "SAR aircraft position report: 111232511, 58.144000°N 6.278843°W, altitude 303 m, SOG 42 kn, COG 154.5°"
         );
+    }
 
-        // What isn't available is left out, but a position says so.
+    /// Messages built here, rather than heard, display the same way; what isn't available is left
+    /// out, but a position says so.
+    #[test]
+    fn display_built() {
+        use ais_asm::{Broadcast, Linkage};
         let mmsi = |n| MMSI::new(n).unwrap();
         let state = CommunicationState { sync: 0, slot_time_out: 0, sub_message: 0 };
         assert_eq!(
@@ -493,7 +509,6 @@ mod test {
             })),
             "Interrogation: 002320001 asks 235000001 for message 5"
         );
-        use ais_asm::{Broadcast, Linkage};
         assert_eq!(
             shown(Message::BroadcastBinaryMessage(BroadcastApplicationMessage {
                 repeat: RepeatCount::Original,

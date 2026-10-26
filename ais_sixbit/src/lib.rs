@@ -22,7 +22,9 @@ impl SixBitAscii {
         let mut i = 0;
         while i < Self::ALPHABET.len() {
             let ch = Self::ALPHABET[i];
-            result[ch as usize] = i as u8;
+            #[expect(clippy::cast_possible_truncation, reason = "the alphabet has 64 characters")]
+            let code = i as u8;
+            result[ch as usize] = code;
             i += 1;
         }
         result
@@ -76,13 +78,11 @@ impl<const SIZE: usize> FromStr for SixBitText<SIZE> {
     /// represented as 6-bit ASCII.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut result = [b'@'.try_into()?; SIZE];
-        if s.as_bytes().len() > SIZE {
+        if s.len() > SIZE {
             return Err(());
         }
-        let mut i = 0;
-        for ch in s.as_bytes() {
+        for (i, ch) in s.as_bytes().iter().enumerate() {
             result[i] = (*ch).try_into()?;
-            i += 1;
         }
         Ok(Self(result))
     }
@@ -90,6 +90,7 @@ impl<const SIZE: usize> FromStr for SixBitText<SIZE> {
 
 impl<const SIZE: usize> SixBitText<SIZE> {
     /// Iterate over the characters as standard ASCII, including any padding.
+    #[must_use]
     pub fn iter(&self) -> SixBitIter<'_> {
         SixBitIter(self.0.iter())
     }
@@ -136,7 +137,7 @@ impl<const SIZE: usize> Display for SixBitText<SIZE> {
         while last > 0 && self.0[last - 1] == SixBitAscii(0) {
             last -= 1;
         }
-        for ch in self.0[..last].iter() {
+        for ch in &self.0[..last] {
             f.write_char(u8::from(*ch).into())?;
         }
         Ok(())
@@ -175,11 +176,18 @@ impl SixBitString {
         Ok(value)
     }
 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.value.len()
     }
 
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.value.is_empty()
+    }
+
     /// Iterate over the characters as standard ASCII.
+    #[must_use]
     pub fn iter(&self) -> SixBitIter<'_> {
         SixBitIter(self.value.iter())
     }
@@ -225,7 +233,7 @@ impl Debug for SixBitString {
 #[cfg(test)]
 #[test]
 fn test_chars() {
-    assert_eq!(b'W', SixBitAscii(23).try_into().unwrap());
+    assert_eq!(b'W', SixBitAscii(23).into());
     assert_eq!(u8::from(SixBitAscii(52)), b'4');
 }
 

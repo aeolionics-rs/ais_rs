@@ -208,7 +208,7 @@ pub enum Action {
     Directive = 1,
 }
 
-/// SubArea definition of the EU Geographic Notice, Tables 3 to 8 of its page.
+/// `SubArea` definition of the EU Geographic Notice, Tables 3 to 8 of its page.
 ///
 /// This version requires 96 bits.
 #[derive(Debug, DekuRead, DekuWrite)]
@@ -257,18 +257,26 @@ pub struct Position {
 impl Position {
     /// Construct from raw components.
     ///
-    /// Latitude and longitude are signed values with a resolution of 1/10_000 minute.
-    /// SAFETY: caller must ensure values are within range
+    /// Latitude and longitude are signed values with a resolution of `1/10_000` minute.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the values are within range.
+    #[must_use]
     pub unsafe fn new_raw(latitude: i32, longitude: i32, precision: u8) -> Self {
-        Self { latitude, longitude, precision }
+        Self { longitude, latitude, precision }
     }
 
     /// Construct a position from latitude and longitude (degrees).
     ///
-    /// Function asserts values are in range.
+    /// # Panics
+    ///
+    /// If the latitude or longitude is out of range.
+    #[must_use]
+    #[expect(clippy::cast_possible_truncation, reason = "in range, the units fit an i32")]
     pub fn new(latitude: f64, longitude: f64, precision: u8) -> Self {
-        assert!(latitude >= -90.0 && latitude <= 90.0);
-        assert!(longitude >= -180.0 && longitude <= 180.0);
+        assert!((-90.0..=90.0).contains(&latitude));
+        assert!((-180.0..=180.0).contains(&longitude));
         let latitude = (latitude * 60.0 * 10_000.0) as i32;
         let longitude = (longitude * 60.0 * 10_000.0) as i32;
         // SAFETY: Bounds have been checked.
@@ -297,7 +305,7 @@ impl TryFrom<&Position> for (f64, f64) {
         if position.latitude.abs() > 90 * 60 * 10_000 || position.longitude.abs() > 180 * 60 * 10_000 {
             return Err(OutOfRange);
         }
-        Ok(((position.latitude as f64) / 60.0 / 10_000.0, (position.longitude as f64) / 60.0 / 10_000.0))
+        Ok((f64::from(position.latitude) / 60.0 / 10_000.0, f64::from(position.longitude) / 60.0 / 10_000.0))
     }
 }
 
@@ -419,8 +427,32 @@ impl Display for Shape {
 }
 
 impl Display for Description {
+    #[expect(clippy::too_many_lines, reason = "a code table, one arm a code")]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use Description::*;
+        use Description::{
+            AbandoningShip, ActiveMilitaryOPAREA, AlternativeRoute, AnchorageClosed, AnchorageOpen,
+            AnchoringProhibited, AwaitInstructionsBeforeProceeding, BridgeGateLockClosed, BridgeGateLockClosing,
+            BridgeGateLockInoperative, BridgeGateLockOpen, BridgeGateLockOpening, Cancellation, ChannelObstruction,
+            ClearanceGranted, ClusterOfFishingVessels, ContactPortAdministration, ContactVTS, DeepDraftAnchorage,
+            Derelicts, DiversDown, DoNotProceed, DredgingOperations, DriftingMines, EntryApprovalRequired,
+            EntryProhibited, EventOrRegatta, FairwayClosed, FiringDanger, FishingProhibited, HarborClosed,
+            HazardousSeaIce, HazardousSubstance, HeavyIcing, HighWaves, HighWind, IceEdge, IcebreakerWaitingArea,
+            LocationOfResponseUnits, MARSEC1, MARSEC2, MARSEC3, MammalsInArea_ReduceSpeed,
+            MammalsInArea_ReportSightings, MammalsInArea_StayClear, MarineMammalHabitat, MediumIce, NetsInWater,
+            NewIce, OldIce, Other, OtherAnchorage, OtherCaution, OtherChartFeature, OtherDistress,
+            OtherEnvironmentalCaution, OtherInformation, OtherInstructions, OtherReport, OtherRestriction, OtherRoute,
+            PersonOverboard, PilotBoardingPosition, PlaceOfRefuge, PollutionResponseArea, PositionOfIcebreakers,
+            ProceedAndAwaitInstructions, ProtectedHabitat_NoFishing, ProtectedHabitat_ReduceSpeed,
+            ProtectedHabitat_StayClear, RecommendedRoute, RecommendedRouteThroughIce, ReducedClearance, ReportingIcing,
+            ReportingRoute, RestrictedVisibility, RogueOrSuspiciousVessel, SarArea, SeaplaneOperations,
+            SemiSubmergedObject, ShallowDraftAnchorage, ShoalArea, ShoalAreaDueEast, ShoalAreaDueNorth,
+            ShoalAreaDueSouth, ShoalAreaDueWest, StormFront, StormWarning, StrongCurrents, SubmergedObject,
+            SubmergedPipelineOrCable, SurveyOperations, SwimArea, ThickIce, ThinIce, TrafficCongestion, Undefined,
+            UnderwaterOperations, UndeterminedIce, UnmannedVehicleOperation, VesselCollision, VesselDisabledAndAdrift,
+            VesselFire, VesselFlooding, VesselGrounding, VesselListing, VesselRequestingAssistance,
+            VesselRequestingMedicalAssistance, VesselSinking, VesselTransferOperations, VesselUnderAssault,
+            VtsActiveTarget, YoungIce,
+        };
         f.write_str(match self {
             MarineMammalHabitat => "marine mammal habitat",
             MammalsInArea_ReduceSpeed => "mammals in area, reduce speed",

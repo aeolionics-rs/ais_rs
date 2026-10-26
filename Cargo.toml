@@ -17,6 +17,11 @@ readme = "README.md"
 keywords = ["ais", "m1371", "itu", "nmea"]
 categories = ["parser-implementations"]
 
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# `assert!(v.is_empty())` says what it means; `assert_eq!(v, [] as [T; 0])` does not.
+assert_is_empty = "allow"
+
 [workspace.dependencies]
 ais_asm = { version = "0.2.0", path = "ais_asm" }
 ais_message = { version = "0.2.0", path = "ais_message" }
