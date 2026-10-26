@@ -14,7 +14,8 @@ use crate::types::{
 };
 use ais_asm::{Addressed, Broadcast};
 use ais_sixbit::SixBitString;
-use ais_types::{BinaryData, MonthDayHourMinute};
+use ais_types::{BinaryData, LatLon, MonthDayHourMinute};
+use core::fmt::{self, Display, Formatter};
 use deku::{DekuRead, DekuWrite};
 
 /// Message 1,2,3: a position report sent by a mobile, Class A station.
@@ -485,4 +486,265 @@ pub struct SingleSlotAtonReport {
     pub status: u8,
     #[deku(bits = 1, pad_bits_before = "1")]
     pub authenticated: bool,
+}
+
+// Each message displays as one line: the station that sent it, then what matters of what it says;
+// what is not available is left out, and the radio's own fields are for `Debug`.
+
+/// Text as it reads, without the '@' and spaces that pad it.
+fn text(text: &impl Display) -> String {
+    text.to_string().trim_end_matches(['@', ' ']).to_owned()
+}
+
+/// Writes `, {what}` when `available`.
+fn and(f: &mut Formatter<'_>, available: bool, what: &impl Display) -> fmt::Result {
+    if available { write!(f, ", {what}") } else { Ok(()) }
+}
+
+/// The motion a report gives, each part only when available.
+fn motion(f: &mut Formatter<'_>, sog: &SpeedOverGround, cog: &CourseOverGround, heading: &Heading) -> fmt::Result {
+    and(f, sog.0 != 1023, sog)?;
+    and(f, cog.0 < 3600, cog)?;
+    and(f, heading.0 < 360, heading)
+}
+
+impl Display for PositionReport {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.source)?;
+        and(f, !matches!(self.status, NavigationalStatus::Undefined), &self.status)?;
+        write!(f, ", {}", self.position)?;
+        motion(f, &self.speed_over_ground, &self.course_over_ground, &self.heading)
+    }
+}
+
+impl Display for AircraftPositionReport {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}", self.source, self.position)?;
+        and(f, self.altitude.0 != 4095, &self.altitude)?;
+        // An aircraft's speed is in whole knots.
+        match self.speed_over_ground.0 {
+            1023 => {}
+            1022 => f.write_str(", SOG ≥ 1022 kn")?,
+            knots => write!(f, ", SOG {knots} kn")?,
+        }
+        and(f, self.course_over_ground.0 < 3600, &self.course_over_ground)
+    }
+}
+
+impl Display for BaseStationReport {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}, {}", self.source, self.utc_datetime, self.position)
+    }
+}
+
+impl Display for ShipStaticData {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.source)?;
+        let name = text(&self.name);
+        and(f, !name.is_empty(), &format_args!("{name:?}"))?;
+        let call_sign = text(&self.call_sign);
+        and(f, !call_sign.is_empty(), &call_sign)?;
+        and(f, self.imo_number.0 != 0, &self.imo_number)?;
+        write!(f, ", {}", self.type_of_ship)?;
+        and(f, self.dimension.a + self.dimension.b != 0, &self.dimension)?;
+        and(f, self.max_draught != 0, &format_args!("draught {:.1} m", f64::from(self.max_draught) / 10.0))?;
+        let destination = text(&self.destination);
+        and(f, !destination.is_empty(), &format_args!("to {destination:?}"))?;
+        and(f, self.eta.month != 0, &format_args!("ETA {}", self.eta))
+    }
+}
+
+impl Display for AddressedApplicationMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} to {}, {}", self.source, self.destination, self.message)
+    }
+}
+
+impl Display for Acknowledgement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} acknowledges", self.source)?;
+        for (i, acknowledged) in self.destinations.iter().enumerate() {
+            let separator = if i == 0 { " " } else { ", " };
+            write!(f, "{separator}{} {}", acknowledged.destination, acknowledged.sequence)?;
+        }
+        Ok(())
+    }
+}
+
+impl Display for BroadcastApplicationMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}", self.source, self.message)
+    }
+}
+
+impl Display for UtcInquiry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} asks {} for UTC and date", self.source, self.destination)
+    }
+}
+
+impl Display for AddressedSafetyMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} to {}, {:?}", self.source, self.destination, text(&self.text))
+    }
+}
+
+impl Display for BroadcastSafetyMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {:?}", self.source, text(&self.text))
+    }
+}
+
+impl Display for Interrogation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} asks", self.source)?;
+        for (i, asked) in self.destinations.iter().enumerate() {
+            let separator = if i == 0 { " " } else { ", " };
+            write!(f, "{separator}{} for message {}", asked.destination, asked.message_id)?;
+        }
+        Ok(())
+    }
+}
+
+impl Display for Assignment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} offset {} increment {}", self.destination, self.offset, self.increment)
+    }
+}
+
+impl Display for AssignedModeCommand {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} assigns {}", self.source, self.a)?;
+        match &self.b {
+            Some(b) => write!(f, ", {b}"),
+            None => Ok(()),
+        }
+    }
+}
+
+impl Display for GnssBroadcast {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, DGNSS corrections from {}, {}", self.source, self.position, self.data)
+    }
+}
+
+impl Display for StandardClassBReport {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}", self.source, self.position)?;
+        motion(f, &self.speed_over_ground, &self.course_over_ground, &self.heading)
+    }
+}
+
+impl Display for ExtendedClassBReport {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.source)?;
+        let name = text(&self.name);
+        and(f, !name.is_empty(), &format_args!("{name:?}"))?;
+        write!(f, ", {}, {}", self.ship_type, self.position)?;
+        motion(f, &self.speed_over_ground, &self.course_over_ground, &self.heading)
+    }
+}
+
+impl Display for Reservation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} slots at offset {} every {}", self.count, self.offset, self.increment)
+    }
+}
+
+impl Display for DataLinkManagement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} reserves", self.source)?;
+        for (i, reservation) in self.reservations.iter().enumerate() {
+            let separator = if i == 0 { " " } else { ", " };
+            write!(f, "{separator}{reservation}")?;
+        }
+        Ok(())
+    }
+}
+
+impl Display for AtonReport {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let name = format!("{}{}", self.name, self.name_extension);
+        write!(f, "{}, {:?}, {}, {}", self.source, text(&name), self.aton_type, self.position)?;
+        and(f, self.virtual_aton, &"virtual")?;
+        and(f, self.off_position, &"off position")
+    }
+}
+
+impl Display for ChannelManagement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, channels {} and {}, {}", self.source, self.channel_a, self.channel_b, self.power)?;
+        // Addressed, the area's bits name the two stations instead.
+        if self.addressed { f.write_str(", addressed") } else { write!(f, ", {}", self.affects) }
+    }
+}
+
+impl Display for GroupSelection {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.stations)?;
+        and(f, !matches!(self.ships, ShipType::NotAvailable), &self.ships)?;
+        write!(f, " in {}", self.area)
+    }
+}
+
+impl Display for GroupAssignment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} assigns {}: report {}, {}", self.source, self.affects, self.interval, self.txrx_mode)?;
+        and(f, self.quiet_time.0 != 0, &self.quiet_time)
+    }
+}
+
+impl Display for StaticData {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.source)?;
+        match &self.data {
+            StaticDataPart::PartA(name) => write!(f, ", {:?}", text(name)),
+            StaticDataPart::PartB { ship_type, call_sign, dimension, .. } => {
+                write!(f, ", {ship_type}")?;
+                let call_sign = text(call_sign);
+                and(f, !call_sign.is_empty(), &call_sign)?;
+                and(f, dimension.a + dimension.b != 0, dimension)
+            }
+        }
+    }
+}
+
+impl Display for SingleSlotBinary {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}", self.source, self.data)?;
+        and(f, self.addressed, &"addressed")?;
+        and(f, self.structured, &"structured")
+    }
+}
+
+impl Display for MultiSlotBinary {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}", self.source, self.data)?;
+        and(f, self.addressed, &"addressed")?;
+        and(f, self.structured, &"structured")
+    }
+}
+
+impl Display for AisSatellitePositionReport {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.source)?;
+        and(f, !matches!(self.navigational_status, NavigationalStatus::Undefined), &self.navigational_status)?;
+        write!(f, ", {}", self.position)?;
+        // Whole knots and degrees, 63 and 511 not available.
+        and(f, self.speed_over_ground != 63, &format_args!("SOG {} kn", self.speed_over_ground))?;
+        and(f, self.course_over_ground != 511, &format_args!("COG {}°", self.course_over_ground))
+    }
+}
+
+impl Display for SingleSlotAtonReport {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, AtoN type {}", self.source, self.aton_type)?;
+        // A ten-thousandth of a minute, as a station's position.
+        if self.latitude.abs() > 90 * 600_000 || self.longitude.abs() > 180 * 600_000 {
+            f.write_str(", position n/a")
+        } else {
+            let (latitude, longitude) = (f64::from(self.latitude) / 600_000.0, f64::from(self.longitude) / 600_000.0);
+            write!(f, ", {}", LatLon { latitude, longitude, decimals: 6 })
+        }
+    }
 }

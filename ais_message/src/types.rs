@@ -5,8 +5,9 @@
 //! Common types.
 
 use ais_sixbit::SixBitText;
-use ais_types::OutOfRange;
+use ais_types::{LatLon, OutOfRange};
 use chrono::{DateTime, Datelike, Timelike, Utc};
+use core::fmt::{Display, Formatter};
 use deku::{DekuRead, DekuWrite, deku_derive};
 
 /// Indicates how many times a message has been repeated.
@@ -49,8 +50,8 @@ impl From<MMSI> for u32 {
     }
 }
 
-impl core::fmt::Display for MMSI {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl Display for MMSI {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:09}", self.0)
     }
 }
@@ -804,6 +805,535 @@ pub enum ReportingInterval {
     TwoSeconds,
     #[deku(id_pat = "_")]
     Other(u8),
+}
+
+/// Writes `n/a` for a value that is not available.
+const NA: &str = "n/a";
+
+impl Display for RepeatCount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            RepeatCount::Original => "original",
+            RepeatCount::Once => "repeated once",
+            RepeatCount::Twice => "repeated twice",
+            RepeatCount::Final => "repeated, final",
+        })
+    }
+}
+
+impl Display for AisVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            AisVersion::M1371_1 => "M.1371-1",
+            AisVersion::M1371_3 => "M.1371-3",
+            AisVersion::M1371_5 => "M.1371-5",
+            AisVersion::M1371_6 => "M.1371-6",
+        })
+    }
+}
+
+impl Display for Manufacturer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "manufacturer {} model {} serial {}", self.id, self.model, self.serial)
+    }
+}
+
+impl Display for ImoNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self.0 {
+            0 => write!(f, "IMO {NA}"),
+            number => write!(f, "IMO {number}"),
+        }
+    }
+}
+
+impl Display for ShipType {
+    /// What the ship is, and for a hazardous cargo its category, `tanker, category X`.
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        use ShipType::*;
+        let (kind, category) = match self {
+            NotAvailable => ("type n/a", None),
+            Research => ("research", None),
+            Training => ("training", None),
+            Government => ("government", None),
+            IceBreaker => ("ice breaker", None),
+            BuoyTender => ("buoy tender", None),
+            CableLayer => ("cable layer", None),
+            PipeLayer => ("pipe layer", None),
+            SpecialPurpose => ("special purpose", None),
+            FPSO => ("FPSO", None),
+            FishFactory => ("fish factory", None),
+            FishFarmSupport => ("fish farm support", None),
+            OffshoreSupport => ("offshore support", None),
+            Construction => ("construction", None),
+            CrewBoat => ("crew boat", None),
+            SupportVessel => ("support vessel", None),
+            WingInGround => ("wing in ground", None),
+            Wig_X => ("wing in ground", Some("X")),
+            Wig_Y => ("wing in ground", Some("Y")),
+            Wig_Z => ("wing in ground", Some("Z")),
+            Wig_OS => ("wing in ground", Some("OS")),
+            Wig_Other => ("wing in ground, other", None),
+            Fishing => ("fishing", None),
+            Towing => ("towing", None),
+            LongTow => ("towing, long tow", None),
+            Dredger => ("dredger", None),
+            Diving => ("diving", None),
+            Warship => ("military", None),
+            Sailing => ("sailing", None),
+            Pleasure => ("pleasure craft", None),
+            Trawler => ("trawler", None),
+            Patrol => ("patrol", None),
+            HighSpeed => ("high speed craft", None),
+            HighSpeed_X => ("high speed craft", Some("X")),
+            HighSpeed_Y => ("high speed craft", Some("Y")),
+            HighSpeed_Z => ("high speed craft", Some("Z")),
+            HighSpeed_OS => ("high speed craft", Some("OS")),
+            HighSpeed_Passenger => ("high speed craft, passenger", None),
+            HighSpeed_RoRo => ("high speed craft, ro-ro", None),
+            HighSpeed_Other => ("high speed craft, other", None),
+            Pilot => ("pilot", None),
+            SearchRescue => ("search and rescue", None),
+            Tug => ("tug", None),
+            Tender => ("port tender", None),
+            Responder => ("anti-pollution", None),
+            LawEnforcement => ("law enforcement", None),
+            Medical => ("medical transport", None),
+            NotAtWar => ("not party to conflict", None),
+            Passenger => ("passenger", None),
+            Passenger_X => ("passenger", Some("X")),
+            Passenger_Y => ("passenger", Some("Y")),
+            Passenger_Z => ("passenger", Some("Z")),
+            Passenger_OS => ("passenger", Some("OS")),
+            CruiseShip => ("cruise ship", None),
+            Ferry => ("ferry", None),
+            Excursion => ("excursion", None),
+            Passenger_Other => ("passenger, other", None),
+            Cargo => ("cargo", None),
+            Cargo_X => ("cargo", Some("X")),
+            Cargo_Y => ("cargo", Some("Y")),
+            Cargo_Z => ("cargo", Some("Z")),
+            Cargo_OS => ("cargo", Some("OS")),
+            BulkCarrier => ("bulk carrier", None),
+            ContainerShip => ("container ship", None),
+            RoRoCarrier => ("ro-ro carrier", None),
+            LandingCraft => ("landing craft", None),
+            Cargo_Other => ("cargo, other", None),
+            Tanker => ("tanker", None),
+            Tanker_X => ("tanker", Some("X")),
+            Tanker_Y => ("tanker", Some("Y")),
+            Tanker_Z => ("tanker", Some("Z")),
+            Tanker_OS => ("tanker", Some("OS")),
+            Tanker_NonHazardous => ("tanker, not hazardous", None),
+            TugAndTank => ("tug and tank barge", None),
+            Tanker_Other => ("tanker, other", None),
+            Other => ("other", None),
+            Other_X => ("other", Some("X")),
+            Other_Y => ("other", Some("Y")),
+            Other_Z => ("other", Some("Z")),
+            Other_OS => ("other", Some("OS")),
+            Other_NoMoreInformation => ("other, no more information", None),
+            Unknown(code) => return write!(f, "type {code}"),
+        };
+        f.write_str(kind)?;
+        match category {
+            Some(category) => write!(f, ", category {category}"),
+            None => Ok(()),
+        }
+    }
+}
+
+impl Display for NavigationalStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        use NavigationalStatus::*;
+        f.write_str(match self {
+            UnderWay => "under way using engine",
+            AtAnchor => "at anchor",
+            NotUnderCommand => "not under command",
+            RestrictedManoeuvrability => "restricted manoeuvrability",
+            ConstrainedByDraught => "constrained by draught",
+            Moored => "moored",
+            Aground => "aground",
+            Fishing => "engaged in fishing",
+            Sailing => "under way sailing",
+            Reserved9 => "status 9",
+            Reserved10 => "status 10",
+            TowingAstern => "towing astern",
+            Pushing => "pushing ahead or towing alongside",
+            Reserved13 => "status 13",
+            ActiveSART => "AIS-SART active",
+            Undefined => "status n/a",
+        })
+    }
+}
+
+impl Display for SatelliteTxControl {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            SatelliteTxControl::Stop => "stop",
+            SatelliteTxControl::Send => "send",
+        })
+    }
+}
+
+impl Display for AssignedMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            AssignedMode::Autonomous => "autonomous",
+            AssignedMode::Assigned => "assigned",
+        })
+    }
+}
+
+impl Display for AltitudeSensor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            AltitudeSensor::GNSS => "GNSS",
+            AltitudeSensor::Barometric => "barometric",
+        })
+    }
+}
+
+impl Display for CommunicationStateType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            CommunicationStateType::SOTDMA => "SOTDMA",
+            CommunicationStateType::ITDMA => "ITDMA",
+        })
+    }
+}
+
+impl Display for CommunicationState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "sync {}, time-out {}, sub-message {}", self.sync, self.slot_time_out, self.sub_message)
+    }
+}
+
+impl Display for DteReady {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            DteReady::Available => "DTE ready",
+            DteReady::NotAvailable => "DTE not ready",
+        })
+    }
+}
+
+impl Display for OverallDimension {
+    /// Length and beam, `15 m × 5 m`, from the distances to the reference point.
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let length = self.a + self.b;
+        let beam = u16::from(self.c) + u16::from(self.d);
+        match (length, beam) {
+            (0, 0) => write!(f, "dimensions {NA}"),
+            (0, beam) => write!(f, "length {NA} × {beam} m"),
+            (length, 0) => write!(f, "{length} m × beam {NA}"),
+            (length, beam) => write!(f, "{length} m × {beam} m"),
+        }
+    }
+}
+
+impl Display for PositioningDevice {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        use PositioningDevice::*;
+        f.write_str(match self {
+            NotAvailable => "device n/a",
+            GPS => "GPS",
+            GLONASS => "GLONASS",
+            GNSS => "GNSS",
+            Loran => "Loran-C",
+            Chayka => "Chayka",
+            INS => "INS",
+            Manual => "surveyed",
+            Galileo => "Galileo",
+            BDS => "BDS",
+            Reserved10 => "device 10",
+            Reserved11 => "device 11",
+            PNT => "PNT",
+            Inertial => "inertial",
+            Terrestrial => "terrestrial",
+            InternalGNSS => "internal GNSS",
+        })
+    }
+}
+
+impl Display for AtonType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        use AtonType::*;
+        f.write_str(match self {
+            NotSpecified => "AtoN type n/a",
+            ReferencePoint => "reference point",
+            Racon => "RACON",
+            FixedStructure => "fixed structure off shore",
+            EmergencyWreckMarkingBuoy => "emergency wreck marking buoy",
+            Light => "light",
+            SectorLight => "sector light",
+            LeadingLightFront => "leading light front",
+            LeadingLightRear => "leading light rear",
+            BeaconCardinalNorth => "beacon, cardinal N",
+            BeaconCardinalEast => "beacon, cardinal E",
+            BeaconCardinalSouth => "beacon, cardinal S",
+            BeaconCardinalWest => "beacon, cardinal W",
+            BeaconPortHand => "beacon, port hand",
+            BeaconStarboardHand => "beacon, starboard hand",
+            BeaconPreferredChannelPortHand => "beacon, preferred channel port hand",
+            BeaconPreferredChannelStarboardHand => "beacon, preferred channel starboard hand",
+            BeaconIsolatedDanger => "beacon, isolated danger",
+            BeaconSafeWater => "beacon, safe water",
+            BeaconSpecialMark => "beacon, special mark",
+            CardinalNorth => "cardinal mark N",
+            CardinalEast => "cardinal mark E",
+            CardinalSouth => "cardinal mark S",
+            CardinalWest => "cardinal mark W",
+            PortHand => "port hand mark",
+            StarboardHand => "starboard hand mark",
+            PreferredChannelPortHand => "preferred channel port hand",
+            PreferredChannelStarboardHand => "preferred channel starboard hand",
+            IsolatedDanger => "isolated danger",
+            SafeWater => "safe water",
+            SpecialMark => "special mark",
+            LightVessel => "light vessel, LANBY or rig",
+        })
+    }
+}
+
+impl Display for UtcDateTime {
+    /// `2026-10-25 09:30:15 UTC`, the date or the time `n/a` when not available.
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        if self.year == 0 || !(1..=12).contains(&self.month) || !(1..=31).contains(&self.day) {
+            write!(f, "date {NA}")?;
+        } else {
+            write!(f, "{:04}-{:02}-{:02}", self.year, self.month, self.day)?;
+        }
+        if self.hour > 23 || self.minute > 59 || self.second > 59 {
+            write!(f, " time {NA}")
+        } else {
+            write!(f, " {:02}:{:02}:{:02} UTC", self.hour, self.minute, self.second)
+        }
+    }
+}
+
+impl Display for QuietTime {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self.0 {
+            0 => f.write_str("no quiet time"),
+            minutes => write!(f, "quiet {minutes} min"),
+        }
+    }
+}
+
+impl Display for Timestamp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Timestamp::Second(second) => write!(f, "second {second}"),
+            Timestamp::Unavailable => write!(f, "time stamp {NA}"),
+            Timestamp::Manual => f.write_str("manual input"),
+            Timestamp::Estimated => f.write_str("dead reckoning"),
+            Timestamp::Inoperative => f.write_str("positioning inoperative"),
+        }
+    }
+}
+
+impl Display for RateOfTurn {
+    /// In degrees a minute to starboard or port, from the indicator's square root scale.
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self.0 {
+            -128 => write!(f, "rate of turn {NA}"),
+            0 => f.write_str("not turning"),
+            127 => f.write_str("turning starboard over 5°/30 s"),
+            -127 => f.write_str("turning port over 5°/30 s"),
+            indicator => {
+                let rate = (f64::from(indicator) / 4.733).powi(2);
+                let side = if indicator > 0 { "starboard" } else { "port" };
+                write!(f, "turning {side} {rate:.0}°/min")
+            }
+        }
+    }
+}
+
+impl Display for SpeedOverGround {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self.0 {
+            1023 => write!(f, "SOG {NA}"),
+            1022 => f.write_str("SOG ≥ 102.2 kn"),
+            tenths => write!(f, "SOG {:.1} kn", f64::from(tenths) / 10.0),
+        }
+    }
+}
+
+impl Display for CourseOverGround {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self.0 {
+            3600.. => write!(f, "COG {NA}"),
+            tenths => write!(f, "COG {:.1}°", f64::from(tenths) / 10.0),
+        }
+    }
+}
+
+impl Display for Heading {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self.0 {
+            360.. => write!(f, "heading {NA}"),
+            degrees => write!(f, "heading {degrees}°"),
+        }
+    }
+}
+
+impl Display for Altitude {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self.0 {
+            4095 => write!(f, "altitude {NA}"),
+            4094 => f.write_str("altitude ≥ 4094 m"),
+            metres => write!(f, "altitude {metres} m"),
+        }
+    }
+}
+
+impl Display for RaimFlag {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            RaimFlag::NotInUse => "RAIM not in use",
+            RaimFlag::InUse => "RAIM in use",
+        })
+    }
+}
+
+impl Display for PositionAccuracy {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            PositionAccuracy::Low => "accuracy over 10 m",
+            PositionAccuracy::High => "accuracy within 10 m",
+        })
+    }
+}
+
+impl Display for StationPosition {
+    /// In degrees to the ten-thousandth of a minute it carries, six places.
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match <(f64, f64)>::try_from(*self) {
+            Ok((latitude, longitude)) => LatLon { latitude, longitude, decimals: 6 }.fmt(f),
+            Err(_) => write!(f, "position {NA}"),
+        }
+    }
+}
+
+impl GnssPosition {
+    /// The latitude and longitude in degrees, from tenths of a minute; `None` when not available,
+    /// latitude 91 or longitude 181 degrees.
+    pub fn degrees(&self) -> Option<(f64, f64)> {
+        if self.latitude.abs() > 90 * 600 || self.longitude.abs() > 180 * 600 {
+            return None;
+        }
+        Some((f64::from(self.latitude) / 600.0, f64::from(self.longitude) / 600.0))
+    }
+}
+
+impl Display for GnssPosition {
+    /// In degrees to the tenth of a minute it carries, three places.
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self.degrees() {
+            Some((latitude, longitude)) => LatLon { latitude, longitude, decimals: 3 }.fmt(f),
+            None => write!(f, "position {NA}"),
+        }
+    }
+}
+
+impl Display for GnssArea {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{} to {}", self.lower_left, self.upper_right)
+    }
+}
+
+impl Display for SpecialManoeuvre {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            SpecialManoeuvre::NotAvailable => "special manoeuvre n/a",
+            SpecialManoeuvre::NotEngaged => "no special manoeuvre",
+            SpecialManoeuvre::Engaged => "special manoeuvre",
+            SpecialManoeuvre::Regional => "special manoeuvre, regional",
+        })
+    }
+}
+
+impl Display for TransmitPower {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            TransmitPower::High => "high power",
+            TransmitPower::Low => "low power",
+        })
+    }
+}
+
+impl Display for Sequence {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "#{}", self.0)
+    }
+}
+
+impl Display for VdesCapability {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            VdesCapability::AisOnly => "AIS only",
+            VdesCapability::Vdes => "VDES",
+            VdesCapability::VdesTerrestrial => "VDES terrestrial",
+            VdesCapability::VdesSatellite => "VDES satellite",
+        })
+    }
+}
+
+impl Display for PositionLatency {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            PositionLatency::Low => "low latency",
+            PositionLatency::High => "high latency",
+        })
+    }
+}
+
+impl Display for StationSelection {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            StationSelection::AllMobile => f.write_str("all mobile stations"),
+            StationSelection::OnlyClassA => f.write_str("Class A stations"),
+            StationSelection::OnlyClassB => f.write_str("Class B stations"),
+            StationSelection::OnlyAirborne => f.write_str("SAR aircraft"),
+            StationSelection::OnlyClassB_SO => f.write_str("Class B SOTDMA stations"),
+            StationSelection::OnlyClassB_CS => f.write_str("Class B CS stations"),
+            StationSelection::AllWaterways => f.write_str("inland waterway stations"),
+            StationSelection::AllInCoverageArea => f.write_str("all stations in coverage"),
+            StationSelection::Other(code) => write!(f, "station type {code}"),
+        }
+    }
+}
+
+impl Display for TxRxMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            TxRxMode::TxAB_RxAB => "Tx A/B Rx A/B",
+            TxRxMode::TxA_RxAB => "Tx A Rx A/B",
+            TxRxMode::TxB_RxAB => "Tx B Rx A/B",
+            TxRxMode::Reserved => "Tx/Rx mode 3",
+        })
+    }
+}
+
+impl Display for ReportingInterval {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            ReportingInterval::Autonomous => f.write_str("autonomous"),
+            ReportingInterval::TenMinutes => f.write_str("every 10 min"),
+            ReportingInterval::SixMinutes => f.write_str("every 6 min"),
+            ReportingInterval::ThreeMinutes => f.write_str("every 3 min"),
+            ReportingInterval::OneMinute => f.write_str("every 1 min"),
+            ReportingInterval::ThirtySeconds => f.write_str("every 30 s"),
+            ReportingInterval::FifteenSeconds => f.write_str("every 15 s"),
+            ReportingInterval::TenSeconds => f.write_str("every 10 s"),
+            ReportingInterval::FiveSeconds => f.write_str("every 5 s"),
+            ReportingInterval::NextShorter => f.write_str("next shorter"),
+            ReportingInterval::NextLonger => f.write_str("next longer"),
+            ReportingInterval::TwoSeconds => f.write_str("every 2 s"),
+            ReportingInterval::Other(code) => write!(f, "interval {code}"),
+        }
+    }
 }
 
 #[cfg(test)]

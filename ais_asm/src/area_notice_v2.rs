@@ -5,7 +5,8 @@
 use super::Linkage;
 pub use super::area_notice::{Boundary, Description, Radius, Scale, SectorBoundary};
 use ais_sixbit::SixBitText;
-use ais_types::{Minutes, MonthDayHourMinute, OutOfRange};
+use ais_types::{LatLon, Minutes, MonthDayHourMinute, OutOfRange};
+use core::fmt::{self, Display, Formatter};
 use deku::{DekuRead, DekuWrite};
 
 /// Structure of an Area Notice message, version 2: the USCG's Area Notice (DAC 366, FI 22),
@@ -131,6 +132,83 @@ pub struct Leg {
 pub struct Shape {
     pub scale: Scale,
     pub points: [Leg; 4],
+}
+
+impl Display for AreaNoticeV2 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let when = (&self.start, &self.duration);
+        crate::notice(f, "USCG Area Notice", &self.linkage, &self.description, None, when, &self.subareas)
+    }
+}
+
+impl crate::Piece for SubArea {
+    fn shape(&self) -> Option<&'static str> {
+        match self {
+            SubArea::Circle { radius, .. } if radius.0 == 0 => Some("point"),
+            SubArea::Circle { .. } => Some("circle"),
+            SubArea::Rectangle { boundary, .. } if boundary.east == 0 && boundary.north == 0 => Some("point"),
+            SubArea::Rectangle { .. } => Some("rectangle"),
+            SubArea::Sector { .. } => Some("sector"),
+            SubArea::Polyline(_) => Some("polyline"),
+            SubArea::Polygon(_) => Some("polygon"),
+            SubArea::AssociatedText(_) => None,
+        }
+    }
+
+    fn text(&self) -> Option<String> {
+        match self {
+            SubArea::AssociatedText(text) => Some(text.to_string()),
+            _ => None,
+        }
+    }
+}
+
+impl Display for SubArea {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            SubArea::Circle { scale, position, radius, .. } => {
+                write!(f, "circle {} m at {position}", scale.metres(u32::from(radius.0)))
+            }
+            SubArea::Rectangle { scale, position, boundary } => {
+                let (east, north) = (scale.metres(u32::from(boundary.east)), scale.metres(u32::from(boundary.north)));
+                write!(f, "rectangle {east} m × {north} m at {position}, {}°", boundary.orientation)
+            }
+            SubArea::Sector { scale, position, boundary } => {
+                let radius = scale.metres(u32::from(boundary.radius.0));
+                write!(f, "sector {radius} m at {position}, {}° to {}°", boundary.left, boundary.right)
+            }
+            SubArea::Polyline(shape) => write!(f, "polyline, {shape}"),
+            SubArea::Polygon(shape) => write!(f, "polygon, {shape}"),
+            SubArea::AssociatedText(text) => write!(f, "{:?}", crate::text(text)),
+        }
+    }
+}
+
+impl Display for Position {
+    /// In degrees to the ten-thousandth of a minute it carries, 6 places.
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match <(f64, f64)>::try_from(self) {
+            Ok((latitude, longitude)) => LatLon { latitude, longitude, decimals: 6 }.fmt(f),
+            Err(_) => f.write_str("position n/a"),
+        }
+    }
+}
+
+impl Display for Leg {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.angle {
+            720.. => f.write_str("unused"),
+            angle => write!(f, "{:.1}° {}", f64::from(angle) / 2.0, self.distance),
+        }
+    }
+}
+
+impl Display for Shape {
+    /// How many legs are used, at its scale.
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let legs = self.points.iter().filter(|leg| leg.angle < 720).count();
+        write!(f, "{legs} legs, {}", self.scale)
+    }
 }
 
 #[cfg(test)]

@@ -39,8 +39,42 @@ impl Default for MonthDayHourMinute {
     }
 }
 
+impl Display for MonthDayHourMinute {
+    /// The month, day and time, `10-25 12:00 UTC`, or `n/a` when any of them is not available.
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if !(1..=12).contains(&self.month) || !(1..=31).contains(&self.day) || self.hour > 23 || self.minute > 59 {
+            return f.write_str("n/a");
+        }
+        write!(f, "{:02}-{:02} {:02}:{:02} UTC", self.month, self.day, self.hour, self.minute)
+    }
+}
+
 #[derive(Debug, DekuRead, DekuWrite)]
 pub struct Minutes(#[deku(bits = 18, endian = "big")] pub u32);
+
+impl Display for Minutes {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} min", self.0)
+    }
+}
+
+/// A latitude and longitude in degrees, written to so many decimal places with their
+/// hemispheres, `51.490000°N 0.120000°W`: for the positions of the messages to display.
+pub struct LatLon {
+    pub latitude: f64,
+    pub longitude: f64,
+    /// Decimal places, as many as the position's resolution has.
+    pub decimals: usize,
+}
+
+impl Display for LatLon {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let decimals = self.decimals;
+        let north = if self.latitude < 0.0 { 'S' } else { 'N' };
+        let east = if self.longitude < 0.0 { 'W' } else { 'E' };
+        write!(f, "{:.decimals$}°{north} {:.decimals$}°{east}", self.latitude.abs(), self.longitude.abs())
+    }
+}
 
 #[derive(Debug)]
 pub struct OutOfRange;
@@ -106,6 +140,13 @@ impl From<&[u8]> for BinaryData {
     }
 }
 
+impl Display for BinaryData {
+    /// How many bits: the data itself is for [`Debug`].
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} bits", self.0.len())
+    }
+}
+
 impl Debug for BinaryData {
     /// Debug output as a quoted string of bits.
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -141,6 +182,19 @@ mod test {
         assert_eq!(message.header, 0b011);
         assert_eq!(message.data.0, bitvec![u8, Msb0; 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0]);
         assert_eq!(message.to_bits().unwrap(), BitSlice::<u8, Msb0>::from_slice(&bytes)[1..]);
+    }
+
+    #[test]
+    fn display() {
+        assert_eq!(BinaryData::from(vec![0xa5, 0x5a]).to_string(), "16 bits");
+        let start = MonthDayHourMinute { month: 10, day: 25, hour: 9, minute: 5 };
+        assert_eq!(start.to_string(), "10-25 09:05 UTC");
+        assert_eq!(MonthDayHourMinute::default().to_string(), "n/a");
+        assert_eq!(Minutes(120).to_string(), "120 min");
+        let position = LatLon { latitude: 51.49, longitude: -0.12, decimals: 6 };
+        assert_eq!(position.to_string(), "51.490000°N 0.120000°W");
+        let position = LatLon { latitude: -33.5, longitude: 151.25, decimals: 3 };
+        assert_eq!(position.to_string(), "33.500°S 151.250°E");
     }
 
     #[test]

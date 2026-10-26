@@ -4,12 +4,13 @@
 
 use super::Linkage;
 use ais_sixbit::SixBitText;
-use ais_types::{Minutes, MonthDayHourMinute, OutOfRange};
+use ais_types::{LatLon, Minutes, MonthDayHourMinute, OutOfRange};
+use core::fmt::{self, Display, Formatter};
 use deku::{DekuRead, DekuWrite};
 
 #[allow(non_camel_case_types)]
 #[repr(u8)]
-#[derive(Debug, DekuRead, DekuWrite)]
+#[derive(Debug, Clone, Copy, DekuRead, DekuWrite)]
 #[deku(id_type = "u8", bits = 7)]
 pub enum Description {
     // Cautions
@@ -319,6 +320,236 @@ pub struct Leg {
 pub struct Shape {
     pub scale: Scale,
     pub points: [Leg; 4],
+}
+
+impl Display for Description {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use Description::*;
+        f.write_str(match self {
+            MarineMammalHabitat => "marine mammal habitat",
+            MammalsInArea_ReduceSpeed => "mammals in area, reduce speed",
+            MammalsInArea_StayClear => "mammals in area, stay clear",
+            MammalsInArea_ReportSightings => "mammals in area, report sightings",
+            ProtectedHabitat_ReduceSpeed => "protected habitat, reduce speed",
+            ProtectedHabitat_StayClear => "protected habitat, stay clear",
+            ProtectedHabitat_NoFishing => "protected habitat, no fishing",
+            Derelicts => "derelicts",
+            TrafficCongestion => "traffic congestion",
+            EventOrRegatta => "event or regatta",
+            DiversDown => "divers down",
+            SwimArea => "swim area",
+            DredgingOperations => "dredging operations",
+            SurveyOperations => "survey operations",
+            UnderwaterOperations => "underwater operations",
+            SeaplaneOperations => "seaplane operations",
+            NetsInWater => "nets in water",
+            ClusterOfFishingVessels => "cluster of fishing vessels",
+            FairwayClosed => "fairway closed",
+            HarborClosed => "harbour closed",
+            SubmergedPipelineOrCable => "submerged pipeline or cable",
+            UnmannedVehicleOperation => "unmanned vehicle operation",
+            OtherCaution => "other caution",
+            StormFront => "storm front",
+            HazardousSeaIce => "hazardous sea ice",
+            StormWarning => "storm warning",
+            HighWind => "high wind",
+            HighWaves => "high waves",
+            RestrictedVisibility => "restricted visibility",
+            StringCurrents => "strong currents",
+            HeavyIcing => "heavy icing",
+            HazardousSubstance => "hazardous substance",
+            OtherEnvironmentalCaution => "other environmental caution",
+            FishingProhibited => "fishing prohibited",
+            EntryApprovalRequired => "entry approval required",
+            EntryProhibited => "entry prohibited",
+            ActiveMilitaryOPAREA => "active military OPAREA",
+            FiringDanger => "firing danger",
+            DriftingMines => "drifting mines",
+            OtherRestriction => "other restriction",
+            AnchorageOpen => "anchorage open",
+            AnchorageClosed => "anchorage closed",
+            AnchoringProhibited => "anchoring prohibited",
+            DeepDraftAnchorage => "deep draft anchorage",
+            ShallowDraftAnchorage => "shallow draft anchorage",
+            VesselTransferOperations => "vessel transfer operations",
+            OtherAnchorage => "other anchorage",
+            IceEdge => "ice edge",
+            NewIce => "new ice",
+            YoungIce => "young ice",
+            ThinIce => "thin ice",
+            MediumIce => "medium ice",
+            ThickIce => "thick ice",
+            OldIce => "old ice",
+            UndeterminedIce => "undetermined ice",
+            MARSEC1 => "MARSEC level 1",
+            MARSEC2 => "MARSEC level 2",
+            MARSEC3 => "MARSEC level 3",
+            VesselDisabledAndAdrift => "vessel disabled and adrift",
+            VesselSinking => "vessel sinking",
+            AbandoningShip => "abandoning ship",
+            VesselRequestingMedicalAssistance => "vessel requesting medical assistance",
+            VesselFlooding => "vessel flooding",
+            VesselFire => "vessel fire",
+            VesselGrounding => "vessel grounding",
+            VesselCollision => "vessel collision",
+            VesselListing => "vessel listing",
+            VesselUnderAssault => "vessel under assault",
+            PersonOverboard => "person overboard",
+            SarArea => "SAR area",
+            PollutionResponseArea => "pollution response area",
+            OtherDistress => "other distress",
+            ContactVTS => "contact VTS",
+            ContactPortAdministration => "contact port administration",
+            DoNoProceed => "do not proceed",
+            AwaitInstructionsBeforeProceeding => "await instructions before proceeding",
+            ProceedAndAwaitInstructions => "proceed and await instructions",
+            ClearanceGranted => "clearance granted",
+            OtherInstructions => "other instructions",
+            PilotBoardingPosition => "pilot boarding position",
+            IcebreakerWaitingArea => "icebreaker waiting area",
+            PlaceOfRefuge => "place of refuge",
+            PositionOfIcebreakers => "position of icebreakers",
+            LocationOfResponseUnits => "location of response units",
+            VtsActiveTarget => "VTS active target",
+            RogueOrSuspiciousVessel => "rogue or suspicious vessel",
+            VesselRequestingAssistance => "vessel requesting assistance",
+            OtherInformation => "other information",
+            SubmergedObject => "submerged object",
+            SemiSubmergedObject => "semi-submerged object",
+            ShoalArea => "shoal area",
+            ShoalAreaDueNorth => "shoal area due north",
+            ShoalAreaDueEast => "shoal area due east",
+            ShoalAreaDueSouth => "shoal area due south",
+            ShoalAreaDueWest => "shoal area due west",
+            ChannelObstruction => "channel obstruction",
+            ReducedClearance => "reduced clearance",
+            BridgeGateLockClosed => "bridge, gate or lock closed",
+            BridgeGateLockOpening => "bridge, gate or lock opening",
+            BridgeGateLockOpen => "bridge, gate or lock open",
+            BridgeGateLockClosing => "bridge, gate or lock closing",
+            BridgeGateLockInoperative => "bridge, gate or lock inoperative",
+            OtherChartFeature => "other chart feature",
+            ReportingIcing => "reporting icing",
+            ReportingRoute => "reporting route",
+            OtherReport => "other report",
+            RecommendedRoute => "recommended route",
+            AlternativeRoute => "alternative route",
+            RecommendedRouteThruIce => "recommended route through ice",
+            OtherRoute => "other route",
+            Other => "other",
+            Cancellation => "cancellation",
+            Undefined => "description n/a",
+            reserved => return write!(f, "description {}", *reserved as u8),
+        })
+    }
+}
+
+impl Display for Scale {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "scale {}", self.0)
+    }
+}
+
+impl Scale {
+    /// Metres for so many of the scale's units.
+    pub fn metres(&self, units: u32) -> u32 {
+        units * 10u32.pow(u32::from(self.0))
+    }
+}
+
+impl Display for Radius {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "radius {}", self.0)
+    }
+}
+
+impl Display for Boundary {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} east × {} north, {}°", self.east, self.north, self.orientation)
+    }
+}
+
+impl Display for SectorBoundary {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}° to {}°", self.radius, self.left, self.right)
+    }
+}
+
+impl Display for AreaNotice {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let when = (&self.start, &self.duration);
+        crate::notice(f, "Area Notice", &self.linkage, &self.description, None, when, &self.subareas)
+    }
+}
+
+impl crate::Piece for SubArea {
+    fn shape(&self) -> Option<&'static str> {
+        match self {
+            SubArea::Circle { radius, .. } if radius.0 == 0 => Some("point"),
+            SubArea::Circle { .. } => Some("circle"),
+            SubArea::Rectangle { boundary, .. } if boundary.east == 0 && boundary.north == 0 => Some("point"),
+            SubArea::Rectangle { .. } => Some("rectangle"),
+            SubArea::Sector { .. } => Some("sector"),
+            SubArea::Polyline(_) => Some("polyline"),
+            SubArea::Polygon(_) => Some("polygon"),
+            SubArea::AssociatedText(_) => None,
+        }
+    }
+
+    fn text(&self) -> Option<String> {
+        match self {
+            SubArea::AssociatedText(text) => Some(text.to_string()),
+            _ => None,
+        }
+    }
+}
+
+impl Display for SubArea {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            SubArea::Circle { scale, position, radius } => {
+                write!(f, "circle {} m at {position}", scale.metres(u32::from(radius.0)))
+            }
+            SubArea::Rectangle { scale, position, boundary } => {
+                let (east, north) = (scale.metres(u32::from(boundary.east)), scale.metres(u32::from(boundary.north)));
+                write!(f, "rectangle {east} m × {north} m at {position}, {}°", boundary.orientation)
+            }
+            SubArea::Sector { scale, position, boundary } => {
+                let radius = scale.metres(u32::from(boundary.radius.0));
+                write!(f, "sector {radius} m at {position}, {}° to {}°", boundary.left, boundary.right)
+            }
+            SubArea::Polyline(shape) => write!(f, "polyline, {shape}"),
+            SubArea::Polygon(shape) => write!(f, "polygon, {shape}"),
+            SubArea::AssociatedText(text) => write!(f, "{:?}", crate::text(text)),
+        }
+    }
+}
+
+impl Display for Position {
+    /// In degrees to the thousandth of a minute it carries, five places.
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match <(f64, f64)>::try_from(self) {
+            Ok((latitude, longitude)) => LatLon { latitude, longitude, decimals: 5 }.fmt(f),
+            Err(_) => f.write_str("position n/a"),
+        }
+    }
+}
+
+impl Display for Leg {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.angle {
+            720.. => f.write_str("unused"),
+            angle => write!(f, "{:.1}° {}", f64::from(angle) / 2.0, self.distance),
+        }
+    }
+}
+
+impl Display for Shape {
+    /// How many legs are used, at its scale.
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let legs = self.points.iter().filter(|leg| leg.angle < 720).count();
+        write!(f, "{legs} legs, {}", self.scale)
+    }
 }
 
 #[cfg(test)]

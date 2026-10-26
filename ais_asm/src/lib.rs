@@ -13,9 +13,10 @@ pub mod geographic_notice;
 pub mod uscg_geographic_notice;
 
 use ais_sixbit::SixBitString;
-use ais_types::BinaryData;
-use area_notice::AreaNotice;
+use ais_types::{BinaryData, Minutes, MonthDayHourMinute};
+use area_notice::{AreaNotice, Description};
 use area_notice_v2::AreaNoticeV2;
+use core::fmt::{self, Display, Formatter};
 use deku::{DekuRead, DekuWrite};
 use geographic_notice::GeographicNotice;
 use uscg_geographic_notice::GeographicNotice as UscgGeographicNotice;
@@ -49,7 +50,7 @@ pub struct Linkage(#[deku(bits = 10, endian = "big")] pub u16);
 pub struct Capability(#[deku(bits = "1", pad_bits_after = "1")] pub bool);
 
 #[repr(u8)]
-#[derive(Debug, DekuRead, DekuWrite)]
+#[derive(Debug, Clone, Copy, DekuRead, DekuWrite)]
 #[deku(bits = 3, id_type = "u8")]
 pub enum ApplicationResponse {
     UnableToResponse = 0,
@@ -161,4 +162,253 @@ pub enum Broadcast {
     },
     #[deku(id_pat = "_")]
     Unknown(ApplicationId, BinaryData),
+}
+
+impl Display for DAC {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "DAC {}", self.0)
+    }
+}
+
+impl Display for Function {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "FI {}", self.0)
+    }
+}
+
+impl Display for ApplicationId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.0, self.1)
+    }
+}
+
+impl Display for Version {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "version {}", self.0)
+    }
+}
+
+impl Display for MessageVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            0 => f.write_str("test"),
+            version => write!(f, "version {version}"),
+        }
+    }
+}
+
+impl Display for Linkage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Display for Capability {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(if self.0 { "supported" } else { "not supported" })
+    }
+}
+
+impl Display for ApplicationResponse {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            ApplicationResponse::UnableToResponse => f.write_str("unable to respond"),
+            ApplicationResponse::ReceptionAcknowledged => f.write_str("reception acknowledged"),
+            ApplicationResponse::ResponseToFollow => f.write_str("response to follow"),
+            ApplicationResponse::Inhibited => f.write_str("inhibited"),
+            reserved => write!(f, "response {}", *reserved as u8),
+        }
+    }
+}
+
+/// Text as it reads, without the '@' and spaces that pad it.
+fn text(text: &impl Display) -> String {
+    text.to_string().trim_end_matches(['@', ' ']).to_owned()
+}
+
+/// Function indicators as runs, `0, 2-5, 22`.
+fn runs(f: &mut Formatter<'_>, numbers: impl Iterator<Item = usize>) -> fmt::Result {
+    let mut numbers = numbers.peekable();
+    let mut first = true;
+    while let Some(start) = numbers.next() {
+        let mut end = start;
+        while numbers.peek() == Some(&(end + 1)) {
+            end = numbers.next().unwrap_or(end);
+        }
+        f.write_str(if first { "" } else { ", " })?;
+        first = false;
+        if end == start { write!(f, "{start}")? } else { write!(f, "{start}-{end}")? }
+    }
+    if first { f.write_str("none") } else { Ok(()) }
+}
+
+/// A notice's sub-area, as the summary of a notice names it.
+pub(crate) trait Piece {
+    /// The shape it is, `circle` or `point` say; `None` for a piece of the notice's text.
+    fn shape(&self) -> Option<&'static str>;
+    /// Its piece of the notice's text, if it is one.
+    fn text(&self) -> Option<String>;
+}
+
+/// A notice on one line: its name and linkage, what it is about, its action, when it starts and
+/// for how long, its shapes in order (a run of one shape counted), and its text.
+pub(crate) fn notice(
+    f: &mut Formatter<'_>,
+    name: impl Display,
+    linkage: &Linkage,
+    description: &Description,
+    action: Option<&dyn Display>,
+    (start, duration): (&MonthDayHourMinute, &Minutes),
+    pieces: &[impl Piece],
+) -> fmt::Result {
+    write!(f, "{name} {linkage}: {description}")?;
+    if matches!(description, Description::Cancellation) {
+        return Ok(());
+    }
+    if let Some(action) = action {
+        write!(f, ", {action}")?;
+    }
+    match start.to_string().as_str() {
+        "n/a" => f.write_str(", start n/a")?,
+        start => write!(f, ", {start}")?,
+    }
+    match duration.0 {
+        0 => f.write_str(", cancelled")?,
+        262_143 => f.write_str(", duration n/a")?,
+        _ => write!(f, " for {duration}")?,
+    }
+    let mut shapes: Vec<(&str, usize)> = Vec::new();
+    for shape in pieces.iter().filter_map(Piece::shape) {
+        match shapes.last_mut() {
+            Some((last, count)) if *last == shape => *count += 1,
+            _ => shapes.push((shape, 1)),
+        }
+    }
+    for (i, (shape, count)) in shapes.iter().enumerate() {
+        f.write_str(if i == 0 { "; " } else { ", " })?;
+        if *count == 1 { f.write_str(shape)? } else { write!(f, "{shape} ×{count}")? }
+    }
+    let words: String = pieces.iter().filter_map(Piece::text).collect();
+    let words = text(&words);
+    if !words.is_empty() {
+        write!(f, "; {words:?}")?;
+    }
+    Ok(())
+}
+
+impl Display for Addressed {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Addressed::Text { must_acknowledge, sequence, text: words } => {
+                write!(f, "text #{sequence}, {:?}", text(words))?;
+                if *must_acknowledge { f.write_str(", to be acknowledged") } else { Ok(()) }
+            }
+            Addressed::FunctionInterrogation { request } => write!(f, "asks for {request}"),
+            Addressed::CapabilityInterrogation { request } => write!(f, "asks for the {request} capabilities"),
+            Addressed::CapabilityReply { dac, functions } => {
+                write!(f, "{dac} supports FI ")?;
+                runs(f, functions.iter().enumerate().filter(|(_, c)| c.0).map(|(i, _)| i))
+            }
+            Addressed::ApplicationAcknowledgement { requested, sequence, is_available, response } => {
+                write!(f, "acknowledges {requested} #{sequence}, {response}")?;
+                if *is_available { Ok(()) } else { f.write_str(", not available") }
+            }
+            Addressed::AreaNotice(notice) => notice.fmt(f),
+            Addressed::EuGeographicNotice(notice) => notice.fmt(f),
+            Addressed::UscgGeographicNotice(notice) => notice.fmt(f),
+            Addressed::Unknown(application, data) => write!(f, "{application}, {data}"),
+        }
+    }
+}
+
+impl Display for Broadcast {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Broadcast::Text { sequence, text: words } => write!(f, "text #{sequence}, {:?}", text(words)),
+            Broadcast::AreaNotice(notice) => notice.fmt(f),
+            Broadcast::AreaNoticeV2(notice) => notice.fmt(f),
+            Broadcast::EuGeographicNotice(notice) => notice.fmt(f),
+            Broadcast::UscgGeographicNotice(notice) => notice.fmt(f),
+            Broadcast::LinkedText { linkage, text: words, .. } => {
+                write!(f, "Linked Text {linkage}, {:?}", text(words))
+            }
+            Broadcast::Unknown(application, data) => write!(f, "{application}, {data}"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use ais_types::{Minutes, MonthDayHourMinute};
+    use area_notice::{Leg, Position, Radius, Scale, Shape, SubArea};
+
+    fn circle(radius: u16) -> SubArea {
+        SubArea::Circle { scale: Scale(1), position: Position::new(51.51, -0.08, 4), radius: Radius(radius) }
+    }
+
+    #[test]
+    fn a_notice_displays_on_one_line() {
+        let polygon = SubArea::Polygon(Shape {
+            scale: Scale(0),
+            points: [
+                Leg { angle: 180, distance: 300 },
+                Leg { angle: 360, distance: 300 },
+                Leg { angle: 540, distance: 300 },
+                Leg { angle: 720, distance: 0 },
+            ],
+        });
+        let notice = AreaNotice {
+            linkage: Linkage(2),
+            description: Description::DiversDown,
+            start: MonthDayHourMinute { month: 10, day: 26, hour: 18, minute: 59 },
+            duration: Minutes(10),
+            subareas: vec![
+                circle(50),
+                circle(0),
+                polygon,
+                SubArea::AssociatedText("DIVERS DOWN @@".parse().unwrap()),
+                SubArea::AssociatedText("KEEP CLEAR@@@@".parse().unwrap()),
+            ],
+        };
+        assert_eq!(
+            Broadcast::AreaNotice(notice).to_string(),
+            "Area Notice 2: divers down, 10-26 18:59 UTC for 10 min; circle, point, polygon; \"DIVERS DOWN KEEP CLEAR\""
+        );
+        assert_eq!(circle(50).to_string(), "circle 500 m at 51.51000°N 0.08000°W");
+
+        // A cancellation says no more; a run of one shape is counted.
+        let cancellation = AreaNotice {
+            linkage: Linkage(2),
+            description: Description::Cancellation,
+            start: MonthDayHourMinute::default(),
+            duration: Minutes(0),
+            subareas: vec![],
+        };
+        assert_eq!(cancellation.to_string(), "Area Notice 2: cancellation");
+        let undated = AreaNotice {
+            linkage: Linkage(3),
+            description: Description::StringCurrents,
+            start: MonthDayHourMinute::default(),
+            duration: Minutes(262_143),
+            subareas: vec![circle(10), circle(20)],
+        };
+        assert_eq!(undated.to_string(), "Area Notice 3: strong currents, start n/a, duration n/a; circle ×2");
+    }
+
+    #[test]
+    fn the_other_messages_display_what_they_say() {
+        let linked = Broadcast::LinkedText { version: 1, linkage: Linkage(1), text: "WHALES SIGHTED".parse().unwrap() };
+        assert_eq!(linked.to_string(), "Linked Text 1, \"WHALES SIGHTED\"");
+        let text = Addressed::Text { must_acknowledge: true, sequence: 7, text: "HELLO@@".parse().unwrap() };
+        assert_eq!(text.to_string(), "text #7, \"HELLO\", to be acknowledged");
+        let mut functions: [Capability; 64] = core::array::from_fn(|_| Capability(false));
+        for i in [0, 2, 3, 4, 5, 22] {
+            functions[i] = Capability(true);
+        }
+        let reply = Addressed::CapabilityReply { dac: DAC(1), functions };
+        assert_eq!(reply.to_string(), "DAC 1 supports FI 0, 2-5, 22");
+        let unknown = Broadcast::Unknown(ApplicationId(DAC(235), Function(10)), vec![0u8; 3].into());
+        assert_eq!(unknown.to_string(), "DAC 235 FI 10, 24 bits");
+    }
 }

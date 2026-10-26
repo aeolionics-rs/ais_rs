@@ -12,7 +12,7 @@ pub mod types;
 use deku::bitvec::{BitSlice, BitVec, Msb0};
 use deku::prelude::*;
 use message::*;
-use std::fmt::{Binary, Formatter, Write};
+use std::fmt::{Binary, Display, Formatter, Write};
 
 /// An AIS message.
 #[non_exhaustive]
@@ -129,6 +129,42 @@ impl Message {
         padded.extend_from_bitslice(bits);
         let (_, message) = Message::from_bytes((padded.as_raw_slice(), padding))?;
         Ok(message)
+    }
+}
+
+impl Display for Message {
+    /// What kind of message, then the message on one line.
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Message::ScheduledPositionReport(m) => write!(f, "Position report: {m}"),
+            Message::AssignedPositionReport(m) => write!(f, "Position report, assigned: {m}"),
+            Message::SpecialPositionReport(m) => write!(f, "Position report, interrogated: {m}"),
+            Message::BaseStationReport(m) => write!(f, "Base station report: {m}"),
+            Message::StaticData(m) => write!(f, "Static and voyage data: {m}"),
+            Message::AddressedBinaryMessage(m) => write!(f, "Addressed binary message: {m}"),
+            Message::BinaryAcknowledgement(m) => write!(f, "Binary acknowledgement: {m}"),
+            Message::BroadcastBinaryMessage(m) => write!(f, "Binary broadcast message: {m}"),
+            Message::SarPositionReport(m) => write!(f, "SAR aircraft position report: {m}"),
+            Message::UtcDateInquiry(m) => write!(f, "UTC and date inquiry: {m}"),
+            Message::UtcDateResponse(m) => write!(f, "UTC and date response: {m}"),
+            Message::AddressedSafetyMessage(m) => write!(f, "Addressed safety message: {m}"),
+            Message::SafetyAcknowledgement(m) => write!(f, "Safety acknowledgement: {m}"),
+            Message::BroadcastSafetyMessage(m) => write!(f, "Safety broadcast message: {m}"),
+            Message::Interrogation(m) => write!(f, "Interrogation: {m}"),
+            Message::AssignmentModeCommand(m) => write!(f, "Assigned mode command: {m}"),
+            Message::GnssBroadcastMessage(m) => write!(f, "DGNSS broadcast: {m}"),
+            Message::StandardClassBReport(m) => write!(f, "Class B position report: {m}"),
+            Message::ExtendedClassBReport(m) => write!(f, "Class B extended position report: {m}"),
+            Message::DataLinkManagement(m) => write!(f, "Data link management: {m}"),
+            Message::AtonReport(m) => write!(f, "Aid to navigation report: {m}"),
+            Message::ChannelManagement(m) => write!(f, "Channel management: {m}"),
+            Message::GroupAssignment(m) => write!(f, "Group assignment: {m}"),
+            Message::StaticDataReport(m) => write!(f, "Static data report: {m}"),
+            Message::SingleSlotBinary(m) => write!(f, "Single slot binary message: {m}"),
+            Message::MultiSlotBinary(m) => write!(f, "Multiple slot binary message: {m}"),
+            Message::AisSatellite(m) => write!(f, "Long-range position report: {m}"),
+            Message::SingleSlotAtonReport(m) => write!(f, "Single slot AtoN report: {m}"),
+        }
     }
 }
 
@@ -366,6 +402,137 @@ mod test {
         bits.extend([true, true]);
         let Message::ScheduledPositionReport(decoded) = Message::from_bits(&bits).unwrap() else { panic!() };
         assert_eq!(u32::from(decoded.source), 123456789);
+    }
+
+    /// Each message on one line: who sent it, then what matters of what it says.
+    #[test]
+    fn display() {
+        let shown = |payload: &str, fill: usize| decode_with_fill(payload, fill).to_string();
+        assert_eq!(
+            shown("13u?etPv2;0n:dDPwUM1U1Cb069D", 0),
+            "Position report: 265547250, under way using engine, 57.660353°N 11.832977°E, SOG 13.9 kn, COG 40.4°, \
+             heading 41°"
+        );
+        assert_eq!(
+            shown("403OviQuMGCqWrRO9>E6fE700@GO", 0),
+            "Base station report: 003669702, 2007-05-14 19:57:39 UTC, 36.883767°N 76.352362°W"
+        );
+        assert_eq!(
+            shown("55?MbV02;H;s<HtKR20EHE:0@T4@Dn2222222216L961O5Gf0NSQEp6ClRp888888888880", 2),
+            "Static and voyage data: 351759000, \"EVER DIADEM\", 3FOF8, IMO 9134270, cargo, 295 m × 32 m, \
+             draught 12.2 m, to \"NEW YORK\", ETA 05-15 14:00 UTC"
+        );
+        assert_eq!(
+            shown("B52K>;h00Fc>jpUlNV@ikwpUoP06", 0),
+            "Class B position report: 338087471, 40.684540°N 74.072132°W, SOG 0.1 kn, COG 79.6°"
+        );
+        assert_eq!(
+            shown("C5N3SRgPEnJGEBT>NhWAwwo862PaLELTBJ:V00000000S0D:R220", 0),
+            "Class B extended position report: 367059850, \"CAPT.J.RIMES\", cargo, 29.543695°N 88.810392°W, \
+             SOG 8.7 kn, COG 335.9°"
+        );
+        assert_eq!(shown("H42O55i18tMET00000000000000", 0), "Static data report: 271041815, \"PROGUY\"");
+        assert_eq!(
+            shown("H42O55lti4hhhilD3nink000?050", 0),
+            "Static data report: 271041815, passenger, TC6163, 15 m × 5 m"
+        );
+        assert_eq!(
+            shown("E=?eK;hab0b4WW5RR`2a0000000C@OBPvT340000002P10", 4),
+            "Aid to navigation report: 888888111, \"STATIONKEEPER\", reference point, 5.021813°S 91.090187°E, virtual"
+        );
+        assert_eq!(
+            shown("K5DfMB9FLsM?P00d", 0),
+            "Long-range position report: 357277000, moored, 37.653°S 176.182°E, SOG 0 kn, COG 11°"
+        );
+        assert_eq!(
+            shown("91b55wi;hbOS@OdQAC062Ch2089h", 0),
+            "SAR aircraft position report: 111232511, 58.144000°N 6.278843°W, altitude 303 m, SOG 42 kn, COG 154.5°"
+        );
+
+        // What isn't available is left out, but a position says so.
+        let mmsi = |n| MMSI::new(n).unwrap();
+        let state = CommunicationState { sync: 0, slot_time_out: 0, sub_message: 0 };
+        assert_eq!(
+            Message::ScheduledPositionReport(PositionReport::new(mmsi(235_000_001), state)).to_string(),
+            "Position report: 235000001, position n/a"
+        );
+        let shown = |message: Message| message.to_string();
+        assert_eq!(
+            shown(Message::UtcDateInquiry(UtcInquiry {
+                repeat: RepeatCount::Original,
+                source: mmsi(235_000_001),
+                destination: mmsi(2_320_001),
+            })),
+            "UTC and date inquiry: 235000001 asks 002320001 for UTC and date"
+        );
+        assert_eq!(
+            shown(Message::BroadcastSafetyMessage(BroadcastSafetyMessage {
+                repeat: RepeatCount::Original,
+                source: mmsi(2_320_001),
+                text: "GALE WARNING@@".parse().unwrap(),
+            })),
+            "Safety broadcast message: 002320001, \"GALE WARNING\""
+        );
+        assert_eq!(
+            shown(Message::BinaryAcknowledgement(Acknowledgement {
+                repeat: RepeatCount::Original,
+                source: mmsi(235_000_001),
+                destinations: vec![AcknowledgmentDestination { destination: mmsi(2_320_001), sequence: Sequence(2) }],
+            })),
+            "Binary acknowledgement: 235000001 acknowledges 002320001 #2"
+        );
+        assert_eq!(
+            shown(Message::Interrogation(Interrogation {
+                repeat: RepeatCount::Original,
+                source: mmsi(2_320_001),
+                destinations: vec![InterrogationDestination {
+                    destination: mmsi(235_000_001),
+                    message_id: 5,
+                    slot_offset: 0,
+                }],
+            })),
+            "Interrogation: 002320001 asks 235000001 for message 5"
+        );
+        use ais_asm::{Broadcast, Linkage};
+        assert_eq!(
+            shown(Message::BroadcastBinaryMessage(BroadcastApplicationMessage {
+                repeat: RepeatCount::Original,
+                source: mmsi(2_320_001),
+                message: Broadcast::LinkedText {
+                    version: 1,
+                    linkage: Linkage(1),
+                    text: "WHALES SIGHTED".parse().unwrap()
+                },
+            })),
+            "Binary broadcast message: 002320001, Linked Text 1, \"WHALES SIGHTED\""
+        );
+        assert_eq!(
+            shown(Message::SingleSlotBinary(message::SingleSlotBinary {
+                repeat: RepeatCount::Original,
+                source: mmsi(123_456_789),
+                addressed: false,
+                structured: true,
+                data: vec![0u8; 4].into(),
+            })),
+            "Single slot binary message: 123456789, 32 bits, structured"
+        );
+    }
+
+    #[test]
+    fn field_types_display_themselves() {
+        assert_eq!(ShipType::Tanker_Y.to_string(), "tanker, category Y");
+        assert_eq!(ShipType::Unknown(25).to_string(), "type 25");
+        assert_eq!(NavigationalStatus::Sailing.to_string(), "under way sailing");
+        assert_eq!(SpeedOverGround(1022).to_string(), "SOG ≥ 102.2 kn");
+        assert_eq!(Heading(511).to_string(), "heading n/a");
+        assert_eq!(RateOfTurn(-128).to_string(), "rate of turn n/a");
+        assert_eq!(RateOfTurn(20).to_string(), "turning starboard 18°/min");
+        assert_eq!(StationPosition::default().to_string(), "position n/a");
+        assert_eq!(OverallDimension { a: 0, b: 0, c: 0, d: 0 }.to_string(), "dimensions n/a");
+        let utc = UtcDateTime { year: 0, month: 0, day: 0, hour: 9, minute: 30, second: 15 };
+        assert_eq!(utc.to_string(), "date n/a 09:30:15 UTC");
+        assert_eq!(UtcDateTime::default().to_string(), "date n/a time n/a");
+        assert_eq!(Timestamp::Estimated.to_string(), "dead reckoning");
     }
 
     #[test]
