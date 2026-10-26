@@ -14,7 +14,7 @@ pub mod uscg_geographic_notice;
 
 use ais_sixbit::SixBitString;
 use ais_types::{BinaryData, Minutes, MonthDayHourMinute};
-use area_notice::{AreaNotice, Description};
+use area_notice::AreaNotice;
 use area_notice_v2::AreaNoticeV2;
 use core::fmt::{self, Display, Formatter};
 use deku::{DekuRead, DekuWrite};
@@ -256,13 +256,13 @@ pub(crate) fn notice(
     f: &mut Formatter<'_>,
     name: impl Display,
     linkage: &Linkage,
-    description: &Description,
+    (description, cancels): (&dyn Display, bool),
     action: Option<&dyn Display>,
     (start, duration): (&MonthDayHourMinute, &Minutes),
     pieces: &[impl Piece],
 ) -> fmt::Result {
     write!(f, "{name} {linkage}: {description}")?;
-    if matches!(description, Description::Cancellation) {
+    if cancels {
         return Ok(());
     }
     if let Some(action) = action {
@@ -341,7 +341,7 @@ impl Display for Broadcast {
 mod test {
     use super::*;
     use ais_types::{Minutes, MonthDayHourMinute};
-    use area_notice::{Leg, Position, Radius, Scale, Shape, SubArea};
+    use area_notice::{Description, Leg, Position, Radius, Scale, Shape, SubArea};
 
     fn circle(radius: u16) -> SubArea {
         SubArea::Circle { scale: Scale(1), position: Position::new(51.51, -0.08, 4), radius: Radius(radius) }
@@ -388,12 +388,31 @@ mod test {
         assert_eq!(cancellation.to_string(), "Area Notice 2: cancellation");
         let undated = AreaNotice {
             linkage: Linkage(3),
-            description: Description::StringCurrents,
+            description: Description::StrongCurrents,
             start: MonthDayHourMinute::default(),
             duration: Minutes(262_143),
             subareas: vec![circle(10), circle(20)],
         };
         assert_eq!(undated.to_string(), "Area Notice 3: strong currents, start n/a, duration n/a; circle ×2");
+    }
+
+    /// The Area Notices and the Geographic Notices each have their own table: the same code may mean
+    /// something else, and mostly doesn't.
+    #[test]
+    fn each_family_reads_its_own_descriptions() {
+        use deku::DekuContainerRead;
+        use geographic_notice::Description as Geographic;
+        let read = |code: u8| {
+            let area = Description::from_bytes((&[code << 1], 0)).unwrap().1;
+            let geographic = Geographic::from_bytes((&[code << 1], 0)).unwrap().1;
+            (area.to_string(), geographic.to_string())
+        };
+        assert_eq!(read(32), ("fishing prohibited".into(), "other environmental caution".into()));
+        assert_eq!(read(33), ("no anchoring".into(), "fishing prohibited".into()));
+        assert_eq!(read(96), ("sunken vessel".into(), "other information".into()));
+        assert_eq!(read(47), ("description 47".into(), "ice edge".into()), "reserved in the Area Notice");
+        assert_eq!(read(10), ("divers down".into(), "divers down".into()));
+        assert_eq!(read(126), ("cancellation".into(), "cancellation".into()));
     }
 
     #[test]

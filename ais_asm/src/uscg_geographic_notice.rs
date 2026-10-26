@@ -3,10 +3,10 @@
 //  SPDX-License-Identifier: Apache-2.0
 
 //! The USCG Geographic Notice. Each message defines its own sub-area types, as its specification
-//! lays them out; only the notice description, the code table the notices share, comes from the
-//! Area Notice.
+//! lays them out; only the notice description, the code table the Geographic Notices share, comes
+//! from the EU message's module.
 
-use super::area_notice::Description;
+use super::geographic_notice::Description;
 use super::{Linkage, MessageVersion};
 use ais_sixbit::SixBitText;
 use ais_types::{LatLon, Minutes, MonthDayHourMinute, OutOfRange};
@@ -207,7 +207,15 @@ impl Display for GeographicNotice {
         let action: &dyn Display = &self.action;
         // A test message says so; the version in force is the specification's business.
         let name = if self.version.0 == 0 { "Geographic Notice (test)" } else { "Geographic Notice" };
-        crate::notice(f, name, &self.linkage, &self.description, Some(action), when, &self.subareas)
+        crate::notice(
+            f,
+            name,
+            &self.linkage,
+            (&self.description, self.description == Description::Cancellation),
+            Some(action),
+            when,
+            &self.subareas,
+        )
     }
 }
 

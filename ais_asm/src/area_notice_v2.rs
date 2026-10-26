@@ -137,7 +137,15 @@ pub struct Shape {
 impl Display for AreaNoticeV2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let when = (&self.start, &self.duration);
-        crate::notice(f, "USCG Area Notice", &self.linkage, &self.description, None, when, &self.subareas)
+        crate::notice(
+            f,
+            "USCG Area Notice",
+            &self.linkage,
+            (&self.description, self.description == Description::Cancellation),
+            None,
+            when,
+            &self.subareas,
+        )
     }
 }
 

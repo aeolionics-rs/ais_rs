@@ -2,12 +2,180 @@
 //
 //  SPDX-License-Identifier: Apache-2.0
 
-use super::area_notice_v2::{Boundary, Description, Leg, Radius, Scale, SectorBoundary};
+use super::area_notice_v2::{Boundary, Leg, Radius, Scale, SectorBoundary};
 use super::{Linkage, Version};
 use ais_sixbit::SixBitText;
 use ais_types::{LatLon, Minutes, MonthDayHourMinute, OutOfRange};
 use core::fmt::{self, Display, Formatter};
 use deku::{DekuRead, DekuWrite};
+
+/// What a Geographic Notice is about: the table the EU inland (DAC 200, FI 42) and USCG (DAC 367,
+/// FI 22) messages share, code for code. It widens the Area Notice's: codes the Area Notice
+/// reserves gain meanings (ice reports, an "other" in each category), and a few move, fishing
+/// prohibited from 32 to 33, the sunken vessel into 97 with the submerged object.
+#[allow(non_camel_case_types)]
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, DekuRead, DekuWrite)]
+#[deku(id_type = "u8", bits = 7)]
+pub enum Description {
+    // Cautions
+    MarineMammalHabitat = 0,
+    MammalsInArea_ReduceSpeed = 1,
+    MammalsInArea_StayClear = 2,
+    MammalsInArea_ReportSightings = 3,
+    ProtectedHabitat_ReduceSpeed = 4,
+    ProtectedHabitat_StayClear = 5,
+    ProtectedHabitat_NoFishing = 6,
+    Derelicts = 7,
+    TrafficCongestion = 8,
+    EventOrRegatta = 9,
+    DiversDown = 10,
+    SwimArea = 11,
+    DredgingOperations = 12,
+    SurveyOperations = 13,
+    UnderwaterOperations = 14,
+    SeaplaneOperations = 15,
+    NetsInWater = 16,
+    ClusterOfFishingVessels = 17,
+    FairwayClosed = 18,
+    HarborClosed = 19,
+    SubmergedPipelineOrCable = 20,
+    UnmannedVehicleOperation = 21,
+    OtherCaution = 22,
+    StormFront = 23,
+
+    // Environmental Cautions.
+    HazardousSeaIce = 24,
+    StormWarning = 25,
+    HighWind = 26,
+    HighWaves = 27,
+    RestrictedVisibility = 28,
+    StrongCurrents = 29,
+    HeavyIcing = 30,
+    HazardousSubstance = 31,
+    OtherEnvironmentalCaution = 32,
+
+    // Restrictions
+    FishingProhibited = 33,
+    EntryApprovalRequired = 34,
+    EntryProhibited = 35,
+    ActiveMilitaryOPAREA = 36,
+    FiringDanger = 37,
+    DriftingMines = 38,
+    OtherRestriction = 39,
+
+    // Anchorage Status
+    AnchorageOpen = 40,
+    AnchorageClosed = 41,
+    AnchoringProhibited = 42,
+    DeepDraftAnchorage = 43,
+    ShallowDraftAnchorage = 44,
+    VesselTransferOperations = 45,
+    OtherAnchorage = 46,
+
+    // Ice Reports
+    IceEdge = 47,
+    NewIce = 48,
+    YoungIce = 49,
+    ThinIce = 50,
+    MediumIce = 51,
+    ThickIce = 52,
+    OldIce = 53,
+    UndeterminedIce = 54,
+    Reserved55 = 55,
+
+    // Security Alerts
+    MARSEC1 = 56,
+    MARSEC2 = 57,
+    MARSEC3 = 58,
+
+    Reserved59 = 59,
+    Reserved60 = 60,
+    Reserved61 = 61,
+    Reserved62 = 62,
+    Reserved63 = 63,
+
+    // Distress
+    VesselDisabledAndAdrift = 64,
+    VesselSinking = 65,
+    AbandoningShip = 66,
+    VesselRequestingMedicalAssistance = 67,
+    VesselFlooding = 68,
+    VesselFire = 69,
+    VesselGrounding = 70,
+    VesselCollision = 71,
+    VesselListing = 72,
+    VesselUnderAssault = 73,
+    PersonOverboard = 74,
+    SarArea = 75,
+    PollutionResponseArea = 76,
+    OtherDistress = 77,
+
+    Reserved78 = 78,
+    Reserved79 = 79,
+
+    // Instructions
+    ContactVTS = 80,
+    ContactPortAdministration = 81,
+    DoNotProceed = 82,
+    AwaitInstructionsBeforeProceeding = 83,
+    ProceedAndAwaitInstructions = 84,
+    ClearanceGranted = 85,
+    OtherInstructions = 86,
+
+    Reserved87 = 87,
+
+    // Information
+    PilotBoardingPosition = 88,
+    IcebreakerWaitingArea = 89,
+    PlaceOfRefuge = 90,
+    PositionOfIcebreakers = 91,
+    LocationOfResponseUnits = 92,
+    VtsActiveTarget = 93,
+    RogueOrSuspiciousVessel = 94,
+    VesselRequestingAssistance = 95,
+    OtherInformation = 96,
+
+    // Chart Features
+    SubmergedObject = 97,
+    SemiSubmergedObject = 98,
+    ShoalArea = 99,
+    ShoalAreaDueNorth = 100,
+    ShoalAreaDueEast = 101,
+    ShoalAreaDueSouth = 102,
+    ShoalAreaDueWest = 103,
+    ChannelObstruction = 104,
+    ReducedClearance = 105,
+    BridgeGateLockClosed = 106,
+    BridgeGateLockOpening = 107,
+    BridgeGateLockOpen = 108,
+    BridgeGateLockClosing = 109,
+    BridgeGateLockInoperative = 110,
+    OtherChartFeature = 111,
+
+    // Reports
+    ReportingIcing = 112,
+    ReportingRoute = 113,
+    OtherReport = 114,
+
+    Reserved115 = 115,
+    Reserved116 = 116,
+    Reserved117 = 117,
+    Reserved118 = 118,
+    Reserved119 = 119,
+
+    // Routes
+    RecommendedRoute = 120,
+    AlternativeRoute = 121,
+    RecommendedRouteThroughIce = 122,
+    OtherRoute = 123,
+
+    Reserved124 = 124,
+
+    Other = 125,
+    Cancellation = 126,
+    Undefined = 127,
+}
 
 /// Structure of the EU inland Geographic Notice message (DAC 200, FI 42; addressed in message 6,
 /// in force since 18 October 2021, <https://www.e-navigation.nl/content/geographic-notice-1>;
@@ -157,7 +325,15 @@ impl Display for GeographicNotice {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let when = (&self.start, &self.duration);
         let action: &dyn Display = &self.action;
-        crate::notice(f, "EU Geographic Notice", &self.linkage, &self.description, Some(action), when, &self.subareas)
+        crate::notice(
+            f,
+            "EU Geographic Notice",
+            &self.linkage,
+            (&self.description, self.description == Description::Cancellation),
+            Some(action),
+            when,
+            &self.subareas,
+        )
     }
 }
 
@@ -239,6 +415,128 @@ impl Display for Shape {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let legs = self.points.iter().filter(|leg| leg.angle < 720).count();
         write!(f, "{legs} legs, {}", self.scale)
+    }
+}
+
+impl Display for Description {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use Description::*;
+        f.write_str(match self {
+            MarineMammalHabitat => "marine mammal habitat",
+            MammalsInArea_ReduceSpeed => "mammals in area, reduce speed",
+            MammalsInArea_StayClear => "mammals in area, stay clear",
+            MammalsInArea_ReportSightings => "mammals in area, report sightings",
+            ProtectedHabitat_ReduceSpeed => "protected habitat, reduce speed",
+            ProtectedHabitat_StayClear => "protected habitat, stay clear",
+            ProtectedHabitat_NoFishing => "protected habitat, no fishing",
+            Derelicts => "derelicts",
+            TrafficCongestion => "traffic congestion",
+            EventOrRegatta => "event or regatta",
+            DiversDown => "divers down",
+            SwimArea => "swim area",
+            DredgingOperations => "dredging operations",
+            SurveyOperations => "survey operations",
+            UnderwaterOperations => "underwater operations",
+            SeaplaneOperations => "seaplane operations",
+            NetsInWater => "nets in water",
+            ClusterOfFishingVessels => "cluster of fishing vessels",
+            FairwayClosed => "fairway closed",
+            HarborClosed => "harbour closed",
+            SubmergedPipelineOrCable => "submerged pipeline or cable",
+            UnmannedVehicleOperation => "unmanned vehicle operation",
+            OtherCaution => "other caution",
+            StormFront => "storm front",
+            HazardousSeaIce => "hazardous sea ice",
+            StormWarning => "storm warning",
+            HighWind => "high wind",
+            HighWaves => "high waves",
+            RestrictedVisibility => "restricted visibility",
+            StrongCurrents => "strong currents",
+            HeavyIcing => "heavy icing",
+            HazardousSubstance => "hazardous substance",
+            OtherEnvironmentalCaution => "other environmental caution",
+            FishingProhibited => "fishing prohibited",
+            EntryApprovalRequired => "entry approval required",
+            EntryProhibited => "entry prohibited",
+            ActiveMilitaryOPAREA => "active military OPAREA",
+            FiringDanger => "firing danger",
+            DriftingMines => "drifting mines",
+            OtherRestriction => "other restriction",
+            AnchorageOpen => "anchorage open",
+            AnchorageClosed => "anchorage closed",
+            AnchoringProhibited => "anchoring prohibited",
+            DeepDraftAnchorage => "deep draft anchorage",
+            ShallowDraftAnchorage => "shallow draft anchorage",
+            VesselTransferOperations => "vessel transfer operations",
+            OtherAnchorage => "other anchorage",
+            IceEdge => "ice edge",
+            NewIce => "new ice",
+            YoungIce => "young ice",
+            ThinIce => "thin ice",
+            MediumIce => "medium ice",
+            ThickIce => "thick ice",
+            OldIce => "old ice",
+            UndeterminedIce => "undetermined ice",
+            MARSEC1 => "MARSEC level 1",
+            MARSEC2 => "MARSEC level 2",
+            MARSEC3 => "MARSEC level 3",
+            VesselDisabledAndAdrift => "vessel disabled and adrift",
+            VesselSinking => "vessel sinking",
+            AbandoningShip => "abandoning ship",
+            VesselRequestingMedicalAssistance => "vessel requesting medical assistance",
+            VesselFlooding => "vessel flooding",
+            VesselFire => "vessel fire",
+            VesselGrounding => "vessel grounding",
+            VesselCollision => "vessel collision",
+            VesselListing => "vessel listing",
+            VesselUnderAssault => "vessel under assault",
+            PersonOverboard => "person overboard",
+            SarArea => "SAR area",
+            PollutionResponseArea => "pollution response area",
+            OtherDistress => "other distress",
+            ContactVTS => "contact VTS",
+            ContactPortAdministration => "contact port administration",
+            DoNotProceed => "do not proceed",
+            AwaitInstructionsBeforeProceeding => "await instructions before proceeding",
+            ProceedAndAwaitInstructions => "proceed and await instructions",
+            ClearanceGranted => "clearance granted",
+            OtherInstructions => "other instructions",
+            PilotBoardingPosition => "pilot boarding position",
+            IcebreakerWaitingArea => "icebreaker waiting area",
+            PlaceOfRefuge => "place of refuge",
+            PositionOfIcebreakers => "position of icebreakers",
+            LocationOfResponseUnits => "location of response units",
+            VtsActiveTarget => "VTS active target",
+            RogueOrSuspiciousVessel => "rogue or suspicious vessel",
+            VesselRequestingAssistance => "vessel requesting assistance",
+            OtherInformation => "other information",
+            SubmergedObject => "submerged object or sunken vessel",
+            SemiSubmergedObject => "semi-submerged object",
+            ShoalArea => "shoal area",
+            ShoalAreaDueNorth => "shoal area due north",
+            ShoalAreaDueEast => "shoal area due east",
+            ShoalAreaDueSouth => "shoal area due south",
+            ShoalAreaDueWest => "shoal area due west",
+            ChannelObstruction => "channel obstruction",
+            ReducedClearance => "reduced clearance",
+            BridgeGateLockClosed => "bridge, gate or lock closed",
+            BridgeGateLockOpening => "bridge, gate or lock opening",
+            BridgeGateLockOpen => "bridge, gate or lock open",
+            BridgeGateLockClosing => "bridge, gate or lock closing",
+            BridgeGateLockInoperative => "bridge, gate or lock inoperative",
+            OtherChartFeature => "other chart feature",
+            ReportingIcing => "reporting icing",
+            ReportingRoute => "reporting route",
+            OtherReport => "other report",
+            RecommendedRoute => "recommended route",
+            AlternativeRoute => "alternative route",
+            RecommendedRouteThroughIce => "recommended route through ice",
+            OtherRoute => "other route",
+            Other => "other",
+            Cancellation => "cancellation",
+            Undefined => "description n/a",
+            reserved => return write!(f, "description {}", *reserved as u8),
+        })
     }
 }
 
