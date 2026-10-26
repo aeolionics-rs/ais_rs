@@ -277,8 +277,8 @@ impl Position {
     pub fn new(latitude: f64, longitude: f64, precision: u8) -> Self {
         assert!((-90.0..=90.0).contains(&latitude));
         assert!((-180.0..=180.0).contains(&longitude));
-        let latitude = (latitude * 60.0 * 10_000.0) as i32;
-        let longitude = (longitude * 60.0 * 10_000.0) as i32;
+        let latitude = (latitude * 60.0 * 10_000.0).round() as i32;
+        let longitude = (longitude * 60.0 * 10_000.0).round() as i32;
         // SAFETY: Bounds have been checked.
         unsafe { Self::new_raw(latitude, longitude, precision) }
     }
@@ -576,6 +576,14 @@ impl Display for Description {
 mod test {
     use super::*;
     use deku::{DekuContainerRead, DekuContainerWrite};
+
+    /// Degrees go to the nearest ten-thousandth of a minute: 0.57 degrees is 341,999.99... of
+    /// them in floating point, which truncating made one short.
+    #[test]
+    fn position_rounds() {
+        let position = Position::new(0.57, -0.41, 4);
+        assert_eq!((position.latitude, position.longitude), (342_000, -246_000));
+    }
 
     #[test]
     fn position_default() {
