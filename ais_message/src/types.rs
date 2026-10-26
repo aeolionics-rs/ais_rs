@@ -26,7 +26,10 @@ pub enum RepeatCount {
 }
 
 /// Maritime Mobile Service Identity.
-#[derive(Debug, Copy, Clone, DekuRead, DekuWrite)]
+///
+/// Written as text it is always nine digits, its leading zeros kept, so that a coast station's
+/// `00MIDxxxx` or a group's `0MIDxxxxx` reads as what it is.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, DekuRead, DekuWrite)]
 pub struct MMSI(#[deku(bits = "30", endian = "big")] u32);
 impl MMSI {
     /// Create a new MMS identifier.
@@ -43,6 +46,24 @@ impl MMSI {
 impl From<MMSI> for u32 {
     fn from(mmsi: MMSI) -> Self {
         mmsi.0
+    }
+}
+
+impl core::fmt::Display for MMSI {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:09}", self.0)
+    }
+}
+
+impl core::str::FromStr for MMSI {
+    type Err = OutOfRange;
+
+    /// An MMSI from its text: nine digits, no more and no fewer.
+    fn from_str(text: &str) -> Result<Self, OutOfRange> {
+        if text.len() != 9 || !text.bytes().all(|b| b.is_ascii_digit()) {
+            return Err(OutOfRange);
+        }
+        MMSI::new(text.parse().map_err(|_| OutOfRange)?)
     }
 }
 
@@ -783,4 +804,20 @@ pub enum ReportingInterval {
     TwoSeconds,
     #[deku(id_pat = "_")]
     Other(u8),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_mmsi_is_written_as_nine_digits() {
+        let coast = MMSI::new(2_320_001).unwrap();
+        assert_eq!(coast.to_string(), "002320001");
+        assert_eq!("002320001".parse::<MMSI>().ok(), Some(coast));
+        assert_eq!(MMSI::new(366_123_456).unwrap().to_string(), "366123456");
+        assert!("2320001".parse::<MMSI>().is_err(), "nine digits");
+        assert!("0023200010".parse::<MMSI>().is_err(), "not ten");
+        assert!("+02320001".parse::<MMSI>().is_err());
+    }
 }
